@@ -1,2 +1,0 @@
-Data2KML is an open-source command line utility written by Stanley Huang for Freematics OBD-II Telematics Kit (http://freematics.com/products).
-Simply drag and drop a data log CSV file to the data2kml.exe and a KML file will be generated.
