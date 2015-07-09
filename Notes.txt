@@ -18,10 +18,11 @@ First notes about the code:
   + GitHub code is public unless payed for ($7/month for 5 repo's private, https://github.com/account/plans)
   + GitHub allows for organizations. Group of collaborators without one person owning repo.
 - TortoiseSVN used to connect to GitHub repository on Windows and Commit, Checkout, Merge, etc.
-  - IMPORTANT: TORTOISESVN DOES NOT WITH WITH TWO STEP AUTHENTICATION
-  + Link of repo to checkout: https://github.com/spikeyrobot/TraX
-  + Subversion used on linux for same purpose as TortoiseSVN
-  + Unsure of how to upload files to GitHub without SVN
+--+-IMPORTANT:-TORTOISESVN-DOES-NOT-WITH-WITH-TWO-STEP-AUTHENTICATION--
+--+-Link-of-repo-to-checkout:-https://github.com/spikeyrobot/TraX--
+--+-Subversion-used-on-linux-for-same-purpose-as-TortoiseSVN--
+  + Unsure of how to upload files to GitHub without SVN/TSVN/Github.exe/Git
+  + Under further research, the GitHub program for windows is better then TSVN (https://windows.github.com/) and Git is better than SVN on Linux
 - Some example files work as-is (YES: gpslogger, megalogger)(NO: tester(gray screen), telelogger(fails compile), nanotimer(gray screen), nanologger(gray screen))
   + Gray screen is caused by incorrect lcd defined and initialized in code (usually in config.h)
 - Board to use in compiler is the "Arduino Mega or Mega 2560" with Processor "ATmega2560 (Mega 2560)"
