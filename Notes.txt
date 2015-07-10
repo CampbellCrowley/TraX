@@ -1,3 +1,10 @@
+Day 2:
+- Builing on Crouton requires deleting library MPU6050 (Fails to compile)
+  + Commands necessary on Crouton/Debian for installation (All must be run as root):
+    - chmod a+rw /dev/ttyACM0
+    - apt-get install arduino arduino-core arduino-mk
+    - gpasswd -a usuario dialout
+
 First notes about the code:
 - Example code already outputs to .csv file, though I'm not sure how to access this besides taking the SD card out (Haven't tried this yet)
 - Very easy to print text to the display with given libraries from Arduino.
