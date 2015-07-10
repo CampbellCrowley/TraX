@@ -17,6 +17,11 @@
 */
 
 #include "Narcoleptic.h"
+#include <avr/wdt.h>
+void Reboot() {
+  wdt_enable(WDTO_15MS);
+  while(1){}
+}
 
 #ifndef __SAM3X8E__
 
@@ -25,7 +30,6 @@
 #include <avr/common.h>
 //#include <util/delay.h>
 
-#include <avr/wdt.h>
 #include <avr/sleep.h>
 
 SIGNAL(WDT_vect) {
