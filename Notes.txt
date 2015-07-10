@@ -1,3 +1,14 @@
+Day 2 Notes:
+(Not sure where my original notes went, had notes on how to install Arduino on Crouton)
+
+- OBD device seems to be having trouble connecting.
+  + No change in code but started failing today after working fine yesterday
+  + megalogger hangs on OBD::init() because COBDI2C::receive() is recieveing "UNABLE TO CONNECT" from Wire.read()
+    - OBD device flashes during data I/O showing that hardware connection is working
+  + Skipping OBD::init() in megalogger by time breakout only causes OBD to reconnect later using same function call making skipping this step pointless as most of the code relies on OBD to be working properly
+
+
+
 First notes about the code:
 - Example code already outputs to .csv file, though I'm not sure how to access this besides taking the SD card out (Haven't tried this yet)
 - Very easy to print text to the display with given libraries from Arduino.
