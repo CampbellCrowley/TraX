@@ -18,6 +18,12 @@
 /**************************************
 * Data streaming options
 **************************************/
+// Enable Campbell's Serial Data Stream
+#define USE_SERIAL_LOGGING 1
+
+//Campbell's Serrial Logging baud rate
+#define SERIAL_BAUD 9600
+
 // enable(1)/disable(0) data streaming
 #define ENABLE_DATA_OUT 1
 
@@ -33,7 +39,7 @@
    9600bps for BLE
    38400bps for BT 2.1
 */
-#define STREAM_BAUDRATE 9600
+#define STREAM_BAUDRATE 115200
 
 /**************************************
 * GPS configuration
