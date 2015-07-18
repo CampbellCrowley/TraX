@@ -1,3 +1,10 @@
+3rd set of notes:
+- GPS data frequency is aprox.: 100ms
+- GPS altitude is often very incorrect (off by 30m) and fluctuates
+- Elapsed time is by OBD device and refreshes aprox.: 6s
+- Lon and Lat seem very accuarate
+- GPS usually has 10-30 Satelites
+
 Day 2 Notes:
 - Builing on Crouton requires deleting library MPU6050 (Fails to compile)
   + Commands necessary on Crouton/Debian for installation (All must be run as root):
