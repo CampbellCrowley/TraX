@@ -7,6 +7,7 @@
 #define OBD_ADAPTER_MODEL OBD_MODEL_I2C
 //#define OBD_ADAPTER_MODEL OBD_MODEL_UART
 #define OBD_PROTOCOL PROTO_AUTO
+#define OBD_BREAKOUT 1
 
 /**************************************
 * Data logging options
@@ -39,7 +40,7 @@
    9600bps for BLE
    38400bps for BT 2.1
 */
-#define STREAM_BAUDRATE 115200
+#define STREAM_BAUDRATE 9600
 
 /**************************************
 * GPS configuration
@@ -51,7 +52,7 @@
 
 // 38400bps for G6010 5Hz GPS receiver
 // 115200bps for G7020 10Hz GPS receiver
-#define GPS_BAUDRATE 38400 /* bps */
+#define GPS_BAUDRATE 115200 /* bps */
 
 /**************************************
 * Accelerometer & Gyro

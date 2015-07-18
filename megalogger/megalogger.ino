@@ -5,7 +5,7 @@
 * All rights reserved.
 * Visit http://freematics.com for more information
 *************************************************************************/
-
+//
 #include <Arduino.h>
 #include <Wire.h>
 #include <OBD.h>
@@ -616,39 +616,44 @@ void showECUCap()
   }
 }
 
-void reconnect()
+bool reconnect()
 {
+  bool reconnected = false;
+#if OBD_BREAKOUT == 0
   fadeOutScreen();
-#if ENABLE_DATA_LOG
-  logger.closeFile();
-#endif
   lcd.clear();
+#endif
+/* #if ENABLE_DATA_LOG
+  logger.closeFile();
+#endif */
   lcd.setFontSize(FONT_SIZE_XLARGE);
   lcd.setColor(RGB16_RED);
   lcd.setCursor(0, 0);
   lcd.print("OBD RECONNECTING");
+#if OBD_BREAKOUT == 0
   state &= ~(STATE_OBD_READY | STATE_GUI_ON);
-  //digitalWrite(SD_CS_PIN, LOW);
-  for (;;) {
-    if (!obd.init())
-      continue;
-
-    int value;
-    if (obd.read(PID_RPM, value) && value > 0)
-      break;
-
-    Narcoleptic.delay(1000);
-  }
-  // re-initialize
-  state |= STATE_OBD_READY;
-  startTime = millis();
-  lastSpeedTime = startTime;
-  lastSpeed = 0;
-  distance = 0;
-#if ENABLE_DATA_LOG
-  logger.openFile();
 #endif
+  //digitalWrite(SD_CS_PIN, LOW);
+  
+  int value;
+  if (obd.read(PID_RPM, value) && value > 0) {
+    // re-initialize
+    state |= STATE_OBD_READY;
+    startTime = millis();
+    lastSpeedTime = startTime;
+    lastSpeed = 0;
+    distance = 0;
+    reconnected = true;
+  }
+
+  //Narcoleptic.delay(1000);
+/* #if ENABLE_DATA_LOG
+  logger.openFile();
+#endif */
+#if OBD_BREAKOUT == 0
   initScreen();
+#endif
+  return reconnected;
 }
 
 // screen layout related stuff
@@ -664,12 +669,73 @@ void showStates()
   lcd.setColor(RGB16_WHITE);
   lcd.setCursor(60, 8);
   lcd.print(" GPS ");
-  if (state & STATE_GPS_CONNECTED) {
-    lcd.setColor(RGB16_GREEN);
-    lcd.draw(tick, 16, 16);
-  } else {
-    lcd.setColor(RGB16_RED);
-    lcd.draw(cross, 16, 16);
+  unsigned long rates[2] = {38400, 115200};
+  byte sizeofRates = sizeof(rates) / sizeof(rates[0]);
+  
+  /* for(byte i=0; i<sizeofRates; i++) {
+    Serial.print("\n");
+    Serial.print(rates[i]);
+    Serial.print(" (");
+    Serial.print((rates[i] == 38400 || rates[i] == 115200));
+    Serial.print(")");
+  } */
+  
+  unsigned long t = millis();
+  do {
+    if (GPSUART.available() && GPSUART.read() == '\r' && gps.satellites()>=0) {
+      state |= STATE_GPS_CONNECTED;
+      break;
+    }
+  } while (millis() - t <= 5000);
+  
+  unsigned long oldRate = 0;
+  for (byte i = 0; i <= sizeofRates; i++) {// try to auto detect GPS baud rate based on pre-defined possibilities
+    
+    if (state & STATE_GPS_CONNECTED) {
+      lcd.setColor(RGB16_GREEN);
+      lcd.draw(tick, 16, 16);
+#if USE_SERIAL_LOGGING
+      lcd.setColor(RGB16_WHITE);
+      lcd.setCursor(125, 8);
+      lcd.print(oldRate);
+#endif
+      if(i>0) {
+        Serial.print("\nGPS: New baud rate: ");
+        Serial.print(oldRate);
+      } else {
+        Serial.print("\nGPS: Baud rate already correct");
+      }
+      break;// successfully connected to GPS
+    } else {
+      if(i < sizeofRates) {
+        GPSUART.begin(rates[i]);
+        Serial.print("\nGPS: Trying other baud rate(");
+        Serial.print(i);
+        Serial.print("/");
+        Serial.print(sizeofRates);
+        Serial.print("): ");
+        Serial.print(rates[i]);
+        /* Serial.print("(");
+        Serial.print(rates[i]);
+        Serial.print(")"); */
+        
+        t = millis();
+        Serial.print("\nGPS: checking available and ready");
+        do {
+          if (GPSUART.available() && GPSUART.read() == '\r' && gps.satellites()>=0) {
+            state |= STATE_GPS_CONNECTED;
+            break;
+          }
+        } while (millis() - t <= 5000);
+        
+      } else {
+        lcd.setColor(RGB16_RED);
+        lcd.draw(cross, 16, 16);
+        break;
+      }
+    }
+    // oldRate = rate;
+    oldRate = rates[i];
   }
   lcd.setColor(RGB16_WHITE);
 }
@@ -739,7 +805,8 @@ void setup()
   //GPSUART.println(PMTK_SET_NMEA_OUTPUT_ALLDATA);
   //GPSUART.println(PMTK_SET_NMEA_UPDATE_10HZ);
   lastGPSDataTime = 0;
-  Serial.print("\nGPS Ready");
+  Serial.print("\nGPS begin on suggested baud rate of ");
+  Serial.print(GPS_BAUDRATE);
 #endif
 
   logger.initSender();
@@ -763,39 +830,53 @@ void setup()
   if (accelgyro.testConnection()) state |= STATE_MEMS_READY;
   Serial.print("\nAccelerometer Ready");
 #endif
+  Serial.print("\nStates: 1st Run");
   showStates();
 
-#if USE_GPS
   unsigned long t = millis();
-  Serial.print("\nSearching for GPS");
+#if USE_GPS
+  Serial.print("\nGPS: checking available and ready (again)");
   do {
     if (GPSUART.available() && GPSUART.read() == '\r') {
       state |= STATE_GPS_CONNECTED;
-      Serial.print("\rGPS Connected");
+      Serial.print("\nGPS: Ready");
       break;
     }
-  } while (millis() - t <= 2000);
+  } while (millis() - t <= 5000);
+  Serial.print("\nStates: 2nd Run");
   showStates();
 #endif
 
   obd.begin();
-  Serial.print("\nOBD begin");
+  Serial.print("\nOBD: Begin");
 
   // this will send a bunch of commands and display response
   testOut();
   Serial.print('\n');
 
   // initialize the OBD until success
-  Serial.print("\nOBD init and wait until ready...");
-  lcd.print("Connecting to OBD...");
-  unsigned long t2 = millis();
-  while (!obd.init(OBD_PROTOCOL) && millis() - t2 <= 15000);
-  if (millis() - t2 <= 15000) {
-    lcd.print("\nConnected to OBD!\t\t\n");
-    Serial.print("\nOBD ready!");
-  } else {
-    lcd.print("\nFailed to connect to OBD!\t\t\n");
-    Serial.print("\nFailed to initialize OBD!\t\t\n");
+  Serial.print("\nOBD: init and wait until ready... (Breakout: ");
+  Serial.print(OBD_BREAKOUT);
+  Serial.print(")");
+  lcd.print("Connecting to OBD... ");
+  t = millis();
+  while (!obd.init(OBD_PROTOCOL)) {
+    if(millis() - t > 15000 && OBD_BREAKOUT) {// Breakout of OBD init loop
+      lcd.setCursor(0, 25);
+      lcd.println("\nFailed to connect to OBD!");
+      Serial.print("\nFailed to initialize OBD!\t\t\n");
+      break;
+    } else if(OBD_BREAKOUT) {
+      lcd.setCursor(125, 24);
+      unsigned int timeLeftInt = ((15000.0 - (millis() - t))/1000/*100*/);
+      /*double timeLeftDoub = (double)timeLeftInt/10;*/
+      lcd.print(timeLeftInt);
+      lcd.print("      ");
+    }
+  }
+  if (millis() - t <= 15000 || !OBD_BREAKOUT) {// if the init completed successfully before the breakout
+    lcd.println("\nConnected to OBD!\t\t\n");
+    Serial.print("\nOBD: Ready!");
   }
 
   state |= STATE_OBD_READY;
@@ -891,18 +972,34 @@ void loop()
 
   if (obd.errors >= 3) {
     Serial.print("\nReconnecting to OBD ");
-    reconnect();
+    if(reconnect()) {
+      lcd.setFontSize(FONT_SIZE_XLARGE);
+      lcd.setColor(RGB16_GREEN);
+      lcd.setCursor(0, 0);
+      lcd.print("OBD CONNECTED   ");
+      lcd.setColor(RGB16_WHITE);
+    } else {
+      lcd.setFontSize(FONT_SIZE_XLARGE);
+      lcd.setColor(RGB16_RED);
+      lcd.setCursor(0, 0);
+      lcd.print("OBD DISCONNECTED");
+      lcd.setColor(RGB16_WHITE);
+    }
+    obd.errors = 0;
   }
 
 #if USE_GPS
   if (millis() - lastGPSDataTime > GPS_DATA_TIMEOUT || gps.satellites() < 3) {
     // GPS not ready
     state &= ~STATE_GPS_READY;
-    Serial.print("/nGPS Not Ready");
+    Serial.print("\nGPS Not Ready");
+#if OBD_BREAKOUT
+    Serial.print(" (Error could be because OBD tried to reconnect. If it did not attempt to reconnect immediately before then there is another error, otherwise could mean that GPS is Ready.)");
+#endif
   } else {
     // GPS ready
     state |= STATE_GPS_READY;
-    Serial.print("/nGPS Ready!");
+    Serial.print("\nGPS Ready!");
   }
 #endif
 }
