@@ -1,6 +1,9 @@
 Day 2 Notes:
-(Not sure where my original notes went, had notes on how to install Arduino on Crouton)
-
+- Builing on Crouton requires deleting library MPU6050 (Fails to compile)
+  + Commands necessary on Crouton/Debian for installation (All must be run as root):
+    - chmod a+rw /dev/ttyACM0
+    - apt-get install arduino arduino-core arduino-mk
+- gpasswd -a usuario dialout
 - OBD device seems to be having trouble connecting.
   + No change in code but started failing today after working fine yesterday
   + megalogger hangs on OBD::init() because COBDI2C::receive() is recieveing "UNABLE TO CONNECT" from Wire.read()
