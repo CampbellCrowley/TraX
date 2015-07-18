@@ -15,7 +15,9 @@
 #include <TinyGPS.h>
 #include <I2Cdev.h>
 #include <MPU9150.h>
+#include <avr/wdt.h>// for Reboot()
 #include "Narcoleptic.h"
+#include "Control.h"
 #include "config.h"
 #include "images.h"
 #if ENABLE_DATA_OUT && USE_SOFTSERIAL
@@ -55,7 +57,7 @@ static uint16_t lastSpeed = 0;
 static uint32_t lastSpeedTime = 0;
 static int gpsSpeed = -1;
 static uint16_t gpsDate = 0;
-static String inputString = "";
+String inputString = "";
 boolean stringComplete = false;
 
 static const byte PROGMEM pidTier1[] = {PID_RPM, PID_SPEED, PID_ENGINE_LOAD, PID_THROTTLE};
@@ -799,6 +801,13 @@ void setup()
   lcd.setColor(RGB16_WHITE);
   Serial.print("\nLCD Ready");
 
+#if USE_MPU6050 || USE_MPU9150
+  Wire.begin();
+  accelgyro.initialize();
+  if (accelgyro.testConnection()) state |= STATE_MEMS_READY;
+  Serial.print("\nAccelerometer Ready");
+#endif
+
 #if USE_GPS
   GPSUART.begin(GPS_BAUDRATE);
   // switching to 10Hz mode, effective only for MTK3329
@@ -824,12 +833,6 @@ void setup()
   }
 #endif
 
-#if USE_MPU6050 || USE_MPU9150
-  Wire.begin();
-  accelgyro.initialize();
-  if (accelgyro.testConnection()) state |= STATE_MEMS_READY;
-  Serial.print("\nAccelerometer Ready");
-#endif
   Serial.print("\nStates: 1st Run");
   showStates();
 
@@ -910,12 +913,39 @@ void setup()
 void loop()
 {
 
-  if (stringComplete) {
-    Serial.println(inputString);
+  /* if (stringComplete) {
+    Serial.println("Input: " + inputString);
+    if(inputString == "restart") {
+      Reboot();
+    }
     // clear the string:
     inputString = "";
     stringComplete = false;
+  } */
+  while (Serial.available() > 0) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+    inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+    }
   }
+  
+  if(inputString == "restart") {
+    Serial.println("\nARDUINO REBOOTING\n\n\n\n\n\n\n\n\nARDUINO REBOOTING");
+    Reboot();
+  } else if(inputString == "stop") {
+    Halt();
+  } else if(inputString.length() > 0) {
+    Serial.print("\nInput: ");
+    Serial.print(inputString);
+  }
+  
+  inputString = "";
+  stringComplete = false;
 
   static byte index = 0;
   static byte index2 = 0;
@@ -1004,9 +1034,18 @@ void loop()
 #endif
 }
 
-
-void serialEvent() {
-  while (Serial.available()) {
+void Reboot() {
+  wdt_enable(WDTO_1S);
+  while(1){}
+}
+void Halt() {// FREEZES ARDUINO
+  while(1) {
+    Narcoleptic.delay(1000);
+  }
+}
+/* void serialEvent() {
+  Serial.print("\nSerial Event");
+  while (Serial.available() > 0) {
     // get the new byte:
     char inChar = (char)Serial.read();
     // add it to the inputString:
@@ -1015,6 +1054,10 @@ void serialEvent() {
     // so the main loop can do something about it:
     if (inChar == '\n') {
       stringComplete = true;
+      Serial.print("\n");
+    } else {
+      Serial.print(inChar);
     }
   }
 }
+ */

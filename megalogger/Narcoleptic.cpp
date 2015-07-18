@@ -18,10 +18,6 @@
 
 #include "Narcoleptic.h"
 #include <avr/wdt.h>
-void Reboot() {
-  wdt_enable(WDTO_15MS);
-  while(1){}
-}
 
 #ifndef __SAM3X8E__
 
