@@ -17,7 +17,6 @@
 #include <MPU9150.h>
 #include <avr/wdt.h>// for Reboot()
 #include "Narcoleptic.h"
-#include "Control.h"
 #include "config.h"
 #include "images.h"
 #if ENABLE_DATA_OUT && USE_SOFTSERIAL
@@ -702,15 +701,20 @@ void showStates()
       lcd.print(oldRate);
 #endif
       if(i>0) {
+#if USE_SERIAL_LOGGING
         Serial.print("\nGPS: New baud rate: ");
         Serial.print(oldRate);
+#endif
       } else {
+#if USE_SERIAL_LOGGING
         Serial.print("\nGPS: Baud rate already correct");
+#endif
       }
       break;// successfully connected to GPS
     } else {
       if(i < sizeofRates) {
         GPSUART.begin(rates[i]);
+#if USE_SERIAL_LOGGING
         Serial.print("\nGPS: Trying other baud rate(");
         Serial.print(i);
         Serial.print("/");
@@ -720,9 +724,12 @@ void showStates()
         /* Serial.print("(");
         Serial.print(rates[i]);
         Serial.print(")"); */
+#endif
         
         t = millis();
+#if USE_SERIAL_LOGGING
         Serial.print("\nGPS: checking available and ready");
+#endif
         do {
           if (GPSUART.available() && GPSUART.read() == '\r' && gps.satellites()>=0) {
             state |= STATE_GPS_CONNECTED;
@@ -744,7 +751,9 @@ void showStates()
 
 void testOut()
 {
+#if USE_SERIAL_LOGGING
   Serial.print("\n\nTesting Commands\n");
+#endif
   static const char PROGMEM cmds[][6] = {"ATZ\r", "ATL1\r", "ATRV\r", "0100\r", "010C\r", "0902\r"};
   char buf[OBD_RECV_BUF_SIZE];
   lcd.setFontSize(FONT_SIZE_SMALL);
@@ -757,8 +766,10 @@ void testOut()
     lcd.setColor(RGB16_WHITE);
     lcd.print("Sending ");
     lcd.println(cmd);
+#if USE_SERIAL_LOGGING
     Serial.print(cmd);
     Serial.print(": ");
+#endif
     lcd.setColor(RGB16_CYAN);
     if (obd.sendCommand(cmd, buf)) {
       char *p = strstr(buf, cmd);
@@ -776,9 +787,13 @@ void testOut()
         }
         p++;
       }
+#if USE_SERIAL_LOGGING
       Serial.println(nextOut.substring(0, nextOut.length() - 2)); // Print everything except for the last ": " at the end
+#endif
     } else {
+#if USE_SERIAL_LOGGING
       Serial.println("Timeout");
+#endif
       lcd.println("Timeout");
     }
     //delay(1000);
@@ -799,13 +814,17 @@ void setup()
   lcd.println("MEGA LOGGER - OBD-II/GPS/MEMS");
   lcd.println();
   lcd.setColor(RGB16_WHITE);
+#if USE_SERIAL_LOGGING
   Serial.print("\nLCD Ready");
+#endif
 
 #if USE_MPU6050 || USE_MPU9150
   Wire.begin();
   accelgyro.initialize();
   if (accelgyro.testConnection()) state |= STATE_MEMS_READY;
+#if USE_SERIAL_LOGGING
   Serial.print("\nAccelerometer Ready");
+#endif
 #endif
 
 #if USE_GPS
@@ -814,8 +833,10 @@ void setup()
   //GPSUART.println(PMTK_SET_NMEA_OUTPUT_ALLDATA);
   //GPSUART.println(PMTK_SET_NMEA_UPDATE_10HZ);
   lastGPSDataTime = 0;
+#if USE_SERIAL_LOGGING
   Serial.print("\nGPS begin on suggested baud rate of ");
   Serial.print(GPS_BAUDRATE);
+#endif
 #endif
 
   logger.initSender();
@@ -833,41 +854,57 @@ void setup()
   }
 #endif
 
+#if USE_SERIAL_LOGGING
   Serial.print("\nStates: 1st Run");
+#endif
   showStates();
 
   unsigned long t = millis();
 #if USE_GPS
+#if USE_SERIAL_LOGGING
   Serial.print("\nGPS: checking available and ready (again)");
+#endif
   do {
     if (GPSUART.available() && GPSUART.read() == '\r') {
       state |= STATE_GPS_CONNECTED;
+#if USE_SERIAL_LOGGING
       Serial.print("\nGPS: Ready");
+#endif
       break;
     }
   } while (millis() - t <= 5000);
+#if USE_SERIAL_LOGGING
   Serial.print("\nStates: 2nd Run");
+#endif
   showStates();
 #endif
 
   obd.begin();
+#if USE_SERIAL_LOGGING
   Serial.print("\nOBD: Begin");
+#endif
 
   // this will send a bunch of commands and display response
   testOut();
+#if USE_SERIAL_LOGGING
   Serial.print('\n');
+#endif
 
   // initialize the OBD until success
+#if USE_SERIAL_LOGGING
   Serial.print("\nOBD: init and wait until ready... (Breakout: ");
   Serial.print(OBD_BREAKOUT);
   Serial.print(")");
+#endif
   lcd.print("Connecting to OBD... ");
   t = millis();
   while (!obd.init(OBD_PROTOCOL)) {
     if(millis() - t > 15000 && OBD_BREAKOUT) {// Breakout of OBD init loop
       lcd.setCursor(0, 25);
       lcd.println("\nFailed to connect to OBD!");
+#if USE_SERIAL_LOGGING
       Serial.print("\nFailed to initialize OBD!\t\t\n");
+#endif
       break;
     } else if(OBD_BREAKOUT) {
       lcd.setCursor(125, 24);
@@ -879,7 +916,9 @@ void setup()
   }
   if (millis() - t <= 15000 || !OBD_BREAKOUT) {// if the init completed successfully before the breakout
     lcd.println("\nConnected to OBD!\t\t\n");
+#if USE_SERIAL_LOGGING
     Serial.print("\nOBD: Ready!");
+#endif
   }
 
   state |= STATE_OBD_READY;
@@ -922,6 +961,7 @@ void loop()
     inputString = "";
     stringComplete = false;
   } */
+#if USE_SERIAL_LOGGING
   while (Serial.available() > 0) {
     // get the new byte:
     char inChar = (char)Serial.read();
@@ -943,6 +983,7 @@ void loop()
     Serial.print("\nInput: ");
     Serial.print(inputString);
   }
+#endif
   
   inputString = "";
   stringComplete = false;
@@ -1001,7 +1042,9 @@ void loop()
   }
 
   if (obd.errors >= 3) {
+#if USE_SERIAL_LOGGING
     Serial.print("\nReconnecting to OBD ");
+#endif
     if(reconnect()) {
       lcd.setFontSize(FONT_SIZE_XLARGE);
       lcd.setColor(RGB16_GREEN);
@@ -1022,14 +1065,18 @@ void loop()
   if (millis() - lastGPSDataTime > GPS_DATA_TIMEOUT || gps.satellites() < 3) {
     // GPS not ready
     state &= ~STATE_GPS_READY;
+#if USE_SERIAL_LOGGING
     Serial.print("\nGPS Not Ready");
+#endif
 #if OBD_BREAKOUT
     Serial.print(" (Error could be because OBD tried to reconnect. If it did not attempt to reconnect immediately before then there is another error, otherwise could mean that GPS is Ready.)");
 #endif
   } else {
     // GPS ready
     state |= STATE_GPS_READY;
+#if USE_SERIAL_LOGGING
     Serial.print("\nGPS Ready!");
+#endif
   }
 #endif
 }
