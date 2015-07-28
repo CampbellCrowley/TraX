@@ -22,11 +22,11 @@
 // Enable Campbell's Serial Data Stream
 #define USE_SERIAL_LOGGING 1
 
-//Campbell's Serrial Logging baud rate
+//Campbell's Serial Logging baud rate
 #define SERIAL_BAUD 9600
 
 // enable(1)/disable(0) data streaming
-#define ENABLE_DATA_OUT 1
+#define ENABLE_DATA_OUT 0
 
 // uses software(1)/hardware(0) serial for data streaming
 #define USE_SOFTSERIAL 0
@@ -34,7 +34,7 @@
 // this defines the format of data streaming
 // FORMAT_BIN is required by Freematics OBD iOS App
 // FORMAT_CSV is for text-based output
-#define STREAM_FORMAT FORMAT_BIN
+#define STREAM_FORMAT FORMAT_CSV
 
 /* Default streaming baudrates:
    9600bps for BLE
@@ -68,6 +68,11 @@
 **************************************/
 #define OBD_MIN_INTERVAL 20 /* ms */
 #define ACC_DATA_INTERVAL 200 /* ms */
+
+/**************************************
+* LCD touch
+**************************************/
+#define USE_TOUCH 1
 
 /**************************************
 * LCD module (uncomment only one)
