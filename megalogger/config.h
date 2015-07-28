@@ -70,6 +70,11 @@
 #define ACC_DATA_INTERVAL 200 /* ms */
 
 /**************************************
+* LCD touch
+**************************************/
+#define USE_TOUCH 1
+
+/**************************************
 * LCD module (uncomment only one)
 **************************************/
 LCD_SSD1289 lcd; /* 3.2" SSD12389 based TFT LCD */
