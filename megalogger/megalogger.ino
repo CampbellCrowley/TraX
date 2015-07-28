@@ -63,6 +63,7 @@ static uint16_t gpsDate = 0;
 String inputString = "";
 boolean stringComplete = false;
 static unsigned int tX, tY;
+static unsigned int numreconnect = 0;
 
 static const byte PROGMEM pidTier1[] = {PID_RPM, PID_SPEED, PID_ENGINE_LOAD, PID_THROTTLE};
 static const byte PROGMEM pidTier2[] = {PID_INTAKE_MAP, PID_MAF_FLOW, PID_TIMING_ADVANCE};
@@ -218,7 +219,7 @@ void fadeOutScreen()
   // fade out backlight
   for (int n = 254; n >= 0; n--) {
     lcd.setBackLight(n);
-    delay(5);
+    delay(0);// 5
   }
 }
 
@@ -226,7 +227,7 @@ void fadeInScreen()
 {
   for (int n = 1; n <= 255; n++) {
     lcd.setBackLight(n);
-    delay(10);
+    delay(0);// 10
   }
 }
 
@@ -581,7 +582,7 @@ void logOBDData(byte pid)
   // flush SD data every 1KB
   if ((logger.dataSize >> 10) != lastFileSize) {
     logger.flushFile();
-    // display logged data size
+    // display logged data sizes
     lcd.setFontSize(FONT_SIZE_SMALL);
     lcd.setCursor(242, 28);
     lcd.print((unsigned int)(logger.dataSize >> 10));
@@ -624,7 +625,9 @@ void showECUCap()
 
 bool reconnect()
 {
+  int value;
   bool reconnected = false;
+  numreconnect++;
 #if OBD_BREAKOUT == 0
   fadeOutScreen();
   lcd.clear();
@@ -632,8 +635,12 @@ bool reconnect()
 /* #if ENABLE_DATA_LOG
   logger.closeFile();
 #endif */
-  obd.end();
-  obd.begin();
+  /*if(numreconnect >= 3 && !(obd.read(PID_RPM, value) && value > 0)) {
+    obd.end();
+    obd.begin();
+    obd.init(OBD_PROTOCOL);
+    numreconnect = 0;
+  }*/
   lcd.setFontSize(FONT_SIZE_XLARGE);
   lcd.setColor(RGB16_RED);
   lcd.setCursor(0, 0);
@@ -643,16 +650,15 @@ bool reconnect()
 #endif
   //digitalWrite(SD_CS_PIN, LOW);
   
-  int value;
   if (obd.read(PID_RPM, value) && value > 0) {
-    // re-initialize
-    state |= STATE_OBD_READY;
-    startTime = millis();
-    lastSpeedTime = startTime;
-    lastSpeed = 0;
-    distance = 0;
-    reconnected = true;
-  }
+      // re-initialize
+      state |= STATE_OBD_READY;
+      startTime = millis();
+      lastSpeedTime = startTime;
+      lastSpeed = 0;
+      distance = 0;
+      reconnected = true;
+    }
 
   //Narcoleptic.delay(1000);
 /* #if ENABLE_DATA_LOG
@@ -661,6 +667,10 @@ bool reconnect()
 #if OBD_BREAKOUT == 0
   initScreen();
 #endif
+  lcd.setFontSize(FONT_SIZE_XLARGE);
+  lcd.setColor(RGB16_RED);
+  lcd.setCursor(0, 0);
+  lcd.print("OBD             ");
   return reconnected;
 }
 
@@ -946,6 +956,7 @@ void setup()
 #endif
   lcd.print("Connecting to OBD... ");
   t = millis();
+  int value;
   do {
     if(millis() - t > 15000 && OBD_BREAKOUT) {// Breakout of OBD init loop
       // lcd.setCursor(0, 25);
@@ -959,16 +970,17 @@ void setup()
       break;
     } else if(OBD_BREAKOUT) {
       lcd.setCursor(125, 18);
-      unsigned int timeLeftInt = ((15000.0 - (millis() - t))/1000/*100*/);
+      unsigned int timeLeftInt = ((15000 - (millis() - t))/1000/*100*/);
       /*double timeLeftDoub = (double)timeLeftInt/10;*/
       lcd.print(timeLeftInt);
       lcd.print("  ");
     }
-  } while (!obd.init(OBD_PROTOCOL));
+  } while (!obd.init(OBD_PROTOCOL)/* && !obd.read(PID_RPM,value) && !(value > 0)*/);
   if (millis() - t <= 15000 || !OBD_BREAKOUT) {// if the init completed successfully before the breakout
     lcd.println("\nConnected to OBD!\t\t\n");
 #if USE_SERIAL_LOGGING
-    Serial.print("\nOBD: Ready!");
+    Serial.print("\nOBD: Ready! ");
+    //Serial.print(value);
 #endif
   }
 
@@ -983,6 +995,8 @@ void setup()
   if (obd.getVIN(buf)) {
     lcd.print("VIN:");
     lcd.print(buf);
+    Serial.print("\nVIN: ");
+    Serial.print(buf);
   }
 
   //lcd.setFont(FONT_SIZE_MEDIUM);
