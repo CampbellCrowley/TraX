@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 First notes about the code:
 - Example code already outputs to .csv file, though I'm not sure how to access this besides taking the SD card out (Haven't tried this yet)
 - Very easy to print text to the display with given libraries from Arduino.
@@ -28,3 +29,5 @@ First notes about the code:
 - Board to use in compiler is the "Arduino Mega or Mega 2560" with Processor "ATmega2560 (Mega 2560)"
 - New file created in compiler creates folder named the same as the file which ends in .ino, The names MUST match on the folder and .ino file
 - Use of GPS and OBD port in code is TBD
+- Unsure of how to use Arduino on linux (Only tested on Crouton)
+>>>>>>> master
