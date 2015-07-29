@@ -1,4 +1,24 @@
-<<<<<<< HEAD
+3rd set of notes:
+- GPS data frequency is aprox.: 100ms
+- GPS altitude is often very incorrect (off by 30m) and fluctuates
+- Elapsed time is by OBD device and refreshes aprox.: 6s
+- Lon and Lat seem very accuarate
+- GPS usually has 10-30 Satelites
+
+Day 2 Notes:
+- Builing on Crouton requires deleting library MPU6050 (Fails to compile)
+  + Commands necessary on Crouton/Debian for installation (All must be run as root):
+    - chmod a+rw /dev/ttyACM0
+    - apt-get install arduino arduino-core arduino-mk
+- gpasswd -a usuario dialout
+- OBD device seems to be having trouble connecting.
+  + No change in code but started failing today after working fine yesterday
+  + megalogger hangs on OBD::init() because COBDI2C::receive() is recieveing "UNABLE TO CONNECT" from Wire.read()
+    - OBD device flashes during data I/O showing that hardware connection is working
+  + Skipping OBD::init() in megalogger by time breakout only causes OBD to reconnect later using same function call making skipping this step pointless as most of the code relies on OBD to be working properly
+
+
+
 First notes about the code:
 - Example code already outputs to .csv file, though I'm not sure how to access this besides taking the SD card out (Haven't tried this yet)
 - Very easy to print text to the display with given libraries from Arduino.
@@ -30,4 +50,3 @@ First notes about the code:
 - New file created in compiler creates folder named the same as the file which ends in .ino, The names MUST match on the folder and .ino file
 - Use of GPS and OBD port in code is TBD
 - Unsure of how to use Arduino on linux (Only tested on Crouton)
->>>>>>> master
