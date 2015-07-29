@@ -1,0 +1,30 @@
+First notes about the code:
+- Example code already outputs to .csv file, though I'm not sure how to access this besides taking the SD card out (Haven't tried this yet)
+- Very easy to print text to the display with given libraries from Arduino.
+  + lcd.begin(), initializes lcd screen
+  + lcd.print(var), prints the variable at current cursor location, any var type may be passed in
+  + lcd.println(var), same as print() but with return at end of line
+  + lcd.setCursor(X,Y), sets cursor position for next print call starting at top left corner
+  + lcd.printInt(Int, Int), prints first int. Not sure what second int is
+  + lcd.printLong(long), prints long (Not available to print()?)
+  + lcd.setFontSize(FONT_SIZE_XLARGE, _LARGE, _MEDIUM, _SMALL), integer also works
+  + lcd.setColor(RGB16_CYAN, _RED, _WHITE, _YELLOW, _GREEN), next print color, hexadecimals also work (ex: 0xFFE0)
+- Serial Monitor available for easy log debugging
+  + Multi-channel
+  + I/O sending
+  + Not sure how to use, but lot's of documentation
+- Using GitHub for source control and collaboration location
+  + Must have GitHub account to allow me to add you as a collaborator
+  + GitHub code is public unless payed for ($7/month for 5 repo's private, https://github.com/account/plans)
+  + GitHub allows for organizations. Group of collaborators without one person owning repo.
+- TortoiseSVN used to connect to GitHub repository on Windows and Commit, Checkout, Merge, etc.
+--+-IMPORTANT:-TORTOISESVN-DOES-NOT-WITH-WITH-TWO-STEP-AUTHENTICATION--
+--+-Link-of-repo-to-checkout:-https://github.com/spikeyrobot/TraX--
+--+-Subversion-used-on-linux-for-same-purpose-as-TortoiseSVN--
+  + Unsure of how to upload files to GitHub without SVN/TSVN/Github.exe/Git
+  + Under further research, the GitHub program for windows is better then TSVN (https://windows.github.com/) and Git is better than SVN on Linux
+- Some example files work as-is (YES: gpslogger, megalogger)(NO: tester(gray screen), telelogger(fails compile), nanotimer(gray screen), nanologger(gray screen))
+  + Gray screen is caused by incorrect lcd defined and initialized in code (usually in config.h)
+- Board to use in compiler is the "Arduino Mega or Mega 2560" with Processor "ATmega2560 (Mega 2560)"
+- New file created in compiler creates folder named the same as the file which ends in .ino, The names MUST match on the folder and .ino file
+- Use of GPS and OBD port in code is TBD
