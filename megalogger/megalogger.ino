@@ -593,6 +593,9 @@ void logOBDData(byte pid)
 
   // if OBD response is very fast, go on processing other data for a while
 #ifdef OBD_MIN_INTERVAL
+  /* do {
+    obd.dataIdleLoop();
+  } while (millis() - start < OBD_MIN_INTERVAL); */
   while (millis() - start < OBD_MIN_INTERVAL) {
     obd.dataIdleLoop();
   }
@@ -635,19 +638,25 @@ bool reconnect()
 /* #if ENABLE_DATA_LOG
   logger.closeFile();
 #endif */
-  /*if(numreconnect >= 3 && !(obd.read(PID_RPM, value) && value > 0)) {
+  if(numreconnect >= 3 && !(obd.read(PID_RPM, value) && value <= 0)) {
+    lcd.setFontSize(FONT_SIZE_XLARGE);
+    lcd.setColor(RGB16_RED);
+    lcd.setCursor(0, 0);
+    lcd.print("OBD RESTARTING  ");
     obd.end();
     obd.begin();
-    obd.init(OBD_PROTOCOL);
     numreconnect = 0;
-  }*/
-  lcd.setFontSize(FONT_SIZE_XLARGE);
-  lcd.setColor(RGB16_RED);
-  lcd.setCursor(0, 0);
-  lcd.print("OBD RECONNECTING");
-#if OBD_BREAKOUT == 0
-  state &= ~(STATE_OBD_READY | STATE_GUI_ON);
-#endif
+  } else {
+    lcd.setFontSize(FONT_SIZE_XLARGE);
+    lcd.setColor(RGB16_RED);
+    lcd.setCursor(0, 0);
+    lcd.print("OBD RECONNECTING");
+  }
+  obd.init(OBD_PROTOCOL);
+  
+//#if OBD_BREAKOUT == 0
+  state &= ~(STATE_OBD_READY/* | STATE_GUI_ON*/);
+//#endif
   //digitalWrite(SD_CS_PIN, LOW);
   
   if (obd.read(PID_RPM, value) && value > 0) {
@@ -671,12 +680,16 @@ bool reconnect()
   lcd.setColor(RGB16_RED);
   lcd.setCursor(0, 0);
   lcd.print("OBD             ");
+  lcd.setColor(RGB16_WHITE);
   return reconnected;
 }
 
 // screen layout related stuff
 void showStates()
 {
+  #if USE_SERIAL_LOGGING
+  Serial.print("\nShowing States...");
+  #endif
   lcd.setFontSize(FONT_SIZE_MEDIUM);
   lcd.setColor(RGB16_WHITE);
   lcd.setCursor(0, 8);
@@ -918,24 +931,24 @@ void setup()
   showStates();
 
   unsigned long t = millis();
-#if USE_GPS
-#if USE_SERIAL_LOGGING
-  Serial.print("\nGPS: checking available and ready (again)");
-#endif
-  do {
-    if (GPSUART.available() && GPSUART.read() == '\r') {
-      state |= STATE_GPS_CONNECTED;
-#if USE_SERIAL_LOGGING
-      Serial.print("\nGPS: Ready");
-#endif
-      break;
-    }
-  } while (millis() - t <= 5000);
-#if USE_SERIAL_LOGGING
-  Serial.print("\nStates: 2nd Run");
-#endif
-  showStates();
-#endif
+  #if USE_GPS
+    #if USE_SERIAL_LOGGING
+      Serial.print("\nGPS: checking available and ready");
+    #endif
+    do {
+      if (GPSUART.available() && GPSUART.read() == '\r') {
+        state |= STATE_GPS_CONNECTED;
+        /* #if USE_SERIAL_LOGGING
+          Serial.print("\nGPS: Ready");
+        #endif */
+        break;
+      }
+    } while (millis() - t <= 5000);
+    #if USE_SERIAL_LOGGING
+      Serial.print("\nStates: 2nd Run");
+    #endif
+    showStates();
+  #endif
 
   obd.begin();
 #if USE_SERIAL_LOGGING
@@ -1012,6 +1025,7 @@ void setup()
   startTime = millis();
   lastSpeedTime = startTime;
   lastRefreshTime = millis();
+  // lastRefreshTime = logger.dataTime;
 }
 
 void loop()
@@ -1113,6 +1127,14 @@ void loop()
     lcd.setFontSize(FONT_SIZE_MEDIUM);
     lcd.setCursor(250, 2);
     lcd.print(buf);
+    #if USE_SERIAL_LOGGING
+      Serial.print("\nElapsed: ");
+      Serial.print(buf);
+      Serial.print(", Time: ");
+      Serial.print(logger.dataTime);
+      Serial.print(", LastRefreshTime: ");
+      Serial.print(lastRefreshTime);
+    #endif
     // display OBD time
     if (t < 10000) {
       lcd.setFontSize(FONT_SIZE_SMALL);
@@ -1126,6 +1148,15 @@ void loop()
 
   if (obd.errors >= 3) {
     #if USE_SERIAL_LOGGING
+      char buf[12];
+      unsigned int sec = (logger.dataTime - startTime) / 1000;
+      sprintf(buf, "%02u:%02u ", sec / 60, sec % 60);
+      Serial.print("\nElapsed: ");
+      Serial.print(buf);
+      Serial.print(", Time: ");
+      Serial.print(logger.dataTime);
+      Serial.print(", LastRefreshTime: ");
+      Serial.print(lastRefreshTime);
       Serial.print("\nReconnecting to OBD ");
     #endif
     if(reconnect()) {
@@ -1133,14 +1164,19 @@ void loop()
       lcd.setColor(RGB16_GREEN);
       lcd.setCursor(0, 0);
       lcd.print("OBD CONNECTED   ");
-      lcd.setColor(RGB16_WHITE);
+      #if USE_SERIAL_LOGGING
+      Serial.print("\nOBD Connected");
+      #endif
     } else {
       lcd.setFontSize(FONT_SIZE_XLARGE);
       lcd.setColor(RGB16_RED);
       lcd.setCursor(0, 0);
       lcd.print("OBD DISCONNECTED");
-      lcd.setColor(RGB16_WHITE);
+      #if USE_SERIAL_LOGGING
+      Serial.print("\nOBD Disconnected");
+      #endif
     }
+    lcd.setColor(RGB16_WHITE);
     obd.errors = 0;
   }
 
@@ -1148,24 +1184,32 @@ void loop()
     if (millis() - lastGPSDataTime > GPS_DATA_TIMEOUT || gps.satellites() < 3) {
       // GPS not ready
       state &= ~STATE_GPS_READY;
-    #if USE_SERIAL_LOGGING
+      #if USE_SERIAL_LOGGING
         Serial.print("\nGPS Not Ready");
-    #endif
-    #if OBD_BREAKOUT
-        Serial.print(" (Error could be because OBD tried to reconnect. If it did not attempt to reconnect immediately before then there is another error, otherwise could mean that GPS is Ready.)");
-    #endif
+        #if OBD_BREAKOUT
+          if(gps.satellites() >= 3) {
+            Serial.print(" (Error could be because OBD tried to reconnect. If it did not attempt to reconnect immediately before then there is another error, otherwise could mean that GPS is Ready.)");
+          } else {
+            Serial.print(" (No satellites in sight)");
+          }
+          Serial.print("\nDelay, Sat: ");
+          Serial.print(millis() - lastGPSDataTime);
+          Serial.print(", ");
+          Serial.print(gps.satellites());
+        #endif
+      #endif
     } else {
       // GPS ready
       state |= STATE_GPS_READY;
-    #if USE_SERIAL_LOGGING
+      /* #if USE_SERIAL_LOGGING
         Serial.print("\nGPS Ready!");
-    #endif
+      #endif */
     }
   #endif
 }
 
 void Reboot() {
-  wdt_enable(WDTO_1S);
+  wdt_enable(WDTO_15MS);
   while(1){}
 }
 void Halt() {// FREEZES ARDUINO
