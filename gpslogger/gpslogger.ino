@@ -296,8 +296,9 @@ void setup()
     lcd.setFontSize(FONT_SIZE_MEDIUM);
     lcd.setColor(RGB16_YELLOW);
     lcd.println("Campbell's GPS Logger/Meter");
+    lcd.println("(Linux Build)");
     lcd.setColor(RGB16_WHITE);
-    lcd.println("\r\nBeggining Hacking...");
+    lcd.println("\rBeggining Hacking...");
 
 #if ENABLE_DATA_LOG
     CheckSD();
@@ -474,6 +475,8 @@ void coolStuff() {
     lcd.print("Campbell's");
     lcd.setCursor(240, 15);
     lcd.print("Hacks Loaded");
+    lcd.setCursor(240, 16);
+    lcd.print("(Linux Build)");
 }
 
 void loop()
