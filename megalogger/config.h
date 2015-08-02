@@ -13,7 +13,8 @@
 * Data logging options
 **************************************/
 // enable(1)/disable(0) data logging (if SD card is present)
-#define ENABLE_DATA_LOG 1
+#define ENABLE_DATA_LOG 0
+#define ENABLE_DATA_FILE 1 // Campbell's data_log, must disable ENABLE_DATA_LOG to use this
 #define SD_CS_PIN SS
 
 /**************************************
@@ -23,13 +24,13 @@
 #define USE_SERIAL_LOGGING 1
 
 //Campbell's Serial Logging baud rate
-#define SERIAL_BAUD 9600
+#define SERIAL_BAUD 19200
 
 // enable(1)/disable(0) data streaming
-#define ENABLE_DATA_OUT 0
+#define ENABLE_DATA_OUT 1
 
 // uses software(1)/hardware(0) serial for data streaming
-#define USE_SOFTSERIAL 0
+#define USE_SOFTSERIAL 1
 
 // this defines the format of data streaming
 // FORMAT_BIN is required by Freematics OBD iOS App
