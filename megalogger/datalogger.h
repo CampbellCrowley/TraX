@@ -144,7 +144,7 @@ public:
         dataSize += sdfile.write((uint8_t*)buf, n);
 #endif
     }
-    void logAll(int lap, unsigned long time, uint32_t dist, byte numSat, double lat, double lon, long speed, double alt, unsigned long bearing, unsigned long accLon, unsigned long accLat, uint32_t rpm, byte throttle)
+    void logAll(int lap, unsigned long time, uint32_t dist, byte numSat, float lat, float lon, long speed, double alt, unsigned long bearing, unsigned long accLon, unsigned long accLat, uint32_t rpm, byte throttle)
     {
       String data = "";
       if(!(lap >= 0)) {// lap number NYI
@@ -152,12 +152,56 @@ public:
       } else {
         data += lap + ",";
       }
-      data += (unsigned int)(time/1000); data+=","; // timestamp (s)
+      data += (time/1000); data+=","; // timestamp (s)
       data += (double)dist/1000;data+=","; //  distance driven based on speed and time NOT GPS (meters)
       data += dist;data+=","; //  distance driven based on speed and time NOT GPS (kilometeres)
       data += numSat;data+=",";// number of connected satellites
-      data += lat;data+=",";// latitude
-      data += lon;data+=",";// longitude
+      
+      
+      data += lat/100000;// latitude
+      data += '.';
+      uint32_t poslat;
+      if(lat<0) {
+        poslat=lat*-1;
+      } else {
+        poslat=lat;
+      }
+      for(uint32_t i = 10000; i > 10; i/=10) {
+        if(poslat%(i*10) < i) {
+          data += '0';
+        } else {
+          break;
+        }
+      }
+      if(poslat%100000 < 10000) {
+        data += poslat%100000;
+      } else {
+        data += poslat%100000;
+      }
+      data+=',';
+      
+      data += lon/100000;// longitude
+      Serial.print('.');
+      uint32_t poslon;
+      if(lon<0) {
+        poslon=lon*-1;
+      } else {
+        poslon=lon;
+      }
+      for(uint32_t i = 10000; i > 10; i/=10) {
+        if(poslon%(i*10) < i) {
+          data += '0';
+        } else {
+          break;
+        }
+      }
+      if(poslon%100000 < 10000) {
+        data += poslon%100000;
+      } else {
+        data += poslon%100000;
+      }
+      data+=',';
+      
       data += (double)speed*0.27777777777;data+=",";// speed in meters/second
       data += speed;data+=",";// speed in kilometres/hour
       data += (double)speed*0.621371;data+=",";// speed in miles/hour
