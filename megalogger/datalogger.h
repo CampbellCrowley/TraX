@@ -152,13 +152,13 @@ public:
       } else {
         data += lap + ",";
       }
-      data += (time/1000); data+=","; // timestamp (s)
-      data += (double)dist/1000;data+=","; //  distance driven based on speed and time NOT GPS (meters)
+      data += ((double)time/1000.0);data+=","; // timestamp (s)
+      data += (double)dist*0.621371;data+=","; //  distance driven based on speed and time NOT GPS (miles)
       data += dist;data+=","; //  distance driven based on speed and time NOT GPS (kilometeres)
       data += numSat;data+=",";// number of connected satellites
       
       
-      data += lat/100000;// latitude
+      data += (int)(lat/100000);// latitude
       data += '.';
       uint32_t poslat;
       if(lat<0) {
@@ -180,8 +180,8 @@ public:
       }
       data+=',';
       
-      data += lon/100000;// longitude
-      Serial.print('.');
+      data += (int)(lon/100000);// longitude
+      data += '.';
       uint32_t poslon;
       if(lon<0) {
         poslon=lon*-1;
@@ -210,7 +210,9 @@ public:
       } else {
         data += ",";
       }
-      if(bearing >=0) {
+      if(bearing >= 360) {
+        data += '0';data+=",";// compass direction/rotation
+      } else if(bearing >= 0) {
         data += bearing;data+=",";// compass direction/rotation
       } else {
         data += ",";
@@ -243,7 +245,7 @@ public:
     }
 #if ENABLE_DATA_LOG || ENABLE_DATA_FILE
     uint16_t openFile() {
-      return openFile(0000, 01, 01, 00, 00, 00);
+      return openFile(2000, 00, 00, 00, 00, 00);
     }
     uint16_t openFile(uint32_t year, uint32_t month, uint32_t day, uint32_t hour, uint32_t minute, uint32_t second, uint16_t logFlags = 0, uint32_t dateTime = 0)
     {
@@ -311,7 +313,7 @@ public:
         sdfile.println("Note,PROTOTYPE,,,,,,,,,,,,,,,,,");
         sdfile.println(",,,,,,,,,,,,,,,,,,");
         // sdfile.print("\nLap #,Timestamp (ms),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Percentage\r");
-        sdfile.println("Lap #,Timestamp (s),Distance (m),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),X-position (m),Y-position (m),RPM (rpm),Throttle Position (%),Trap name");
+        sdfile.println("Lap #,Timestamp (s),Distance (mi),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),X-position (m),Y-position (m),RPM (rpm),Throttle Position (%),Trap name");
         return fileIndex;
     }
     void closeFile()

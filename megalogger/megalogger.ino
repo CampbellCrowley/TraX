@@ -64,6 +64,9 @@ String inputString = "";
 boolean stringComplete = false;
 static unsigned int tX, tY;
 static unsigned int numreconnect = 0;
+static uint16_t accXoffset = 0;
+static uint16_t accYoffset = 0;
+static uint16_t accZoffset = 0;
 
 static const byte PROGMEM pidTier1[] = {PID_RPM, PID_SPEED, PID_ENGINE_LOAD, PID_THROTTLE};
 static const byte PROGMEM pidTier2[] = {PID_INTAKE_MAP, PID_MAF_FLOW, PID_TIMING_ADVANCE};
@@ -148,7 +151,7 @@ void showPIDData(byte pid, int value)
       lcd.setFontSize(FONT_SIZE_XLARGE);
       lcd.setCursor(32, 6);
       if (value >= 10000) break;
-      setColorByValue(value, 2500, 3500, 5000);
+      setColorByValue(value, 2500, 5000, 7000);
       lcd.printInt(value, 4);
       break;
     case PID_SPEED:
@@ -219,7 +222,7 @@ void fadeOutScreen()
   // fade out backlight
   for (int n = 254; n >= 0; n--) {
     lcd.setBackLight(n);
-    delay(0);// 5
+    delay(5);// 5
   }
 }
 
@@ -227,7 +230,7 @@ void fadeInScreen()
 {
   for (int n = 1; n <= 255; n++) {
     lcd.setBackLight(n);
-    delay(0);// 10
+    delay(10);// 10
   }
 }
 
@@ -428,7 +431,7 @@ void processGPS()
   
   //display latitude
   lcd.setCursor(214, 19);
-  lcd.print(lon/100000);
+  lcd.print((int)(lon/100000));
   lcd.print('.');
   uint32_t poslon;
   if(lon<0) {
@@ -450,7 +453,7 @@ void processGPS()
   }
   //display longitude
   lcd.setCursor(214, 20);
-  lcd.print(lat/100000);
+  lcd.print((int)(lat/100000));
   lcd.print('.');
   uint32_t poslat;
   if(lat<0) {
@@ -1024,38 +1027,36 @@ void setup()
             }
           }
         } while(!fileOpened && millis()- t < 5000);
+        if(!fileOpened) {
+          // uint16_t index = logger.openFile();
+          index = logger.openFile(year, month, day, hour, minute, second);
+          fileOpened = true;
+          lcd.setCursor(0,0);
+          lcd.println();
+          if (index > 0) {
+            lcd.print("File ID:");
+            lcd.println(index);
+          } else {
+            lcd.print("No File");
+          }
+        }
       }
     }
     // lcd.setCursor(0,0);
     // lcd.println("\n\n");
     // if(checkSD()) {
-      if(!fileOpened) {
-        // uint16_t index = logger.openFile();
-        index = logger.openFile(year, month, day, hour, minute, second);
-        fileOpened = true;
-        lcd.setCursor(0,0);
-        lcd.println();
-        if (index > 0) {
-          lcd.print("File ID:");
-          lcd.println(index);
-        } else {
-          lcd.print("No File");
-        }
-      }
     // }
+    #if USE_SERIAL_LOGGING
     if(fileOpened) {
-      #if USE_SERIAL_LOGGING
         Serial.print("\nSD Ready (");
         Serial.print(fix_age);
         Serial.print(")");
-      #endif
     } else {
-      #if USE_SERIAL_LOGGING
         Serial.print("\nSD FAILED to ready (");
         Serial.print(fix_age);
         Serial.print(")");
-      #endif
     }
+    #endif
   #endif
   
 
@@ -1229,6 +1230,17 @@ void writeSD()
       rpm = 0;
     }
     
+    #if ACC_OFFSET
+      if(speed == 0) {
+        accXoffset = ax;
+        accYoffset = ay;
+        accZoffset = az;
+      }
+      ax -= accXoffset;
+      ay -= accYoffset;
+      az -= accZoffset;
+    #endif
+    
     #if USE_SERIAL_LOGGING
       Serial.print("\nLon: ");
       Serial.print(lon);
@@ -1279,7 +1291,7 @@ void writeSD()
     #endif
     
     //            Lap,Timestamp (ms),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (kph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Percentage
-    logger.logAll(-1, millis(), distance/1000, numSat, lat, lon, speed, alt, my, gz, gx, rpm, throttle);
+    logger.logAll(-1, millis(), distance/1000, numSat, lat, lon, speed, alt, my, az, ax, rpm, throttle);
     /* #if USE_SERIAL_LOGGING
       Serial.print("\nWritten to SD Card: ");
     #endif */
@@ -1430,7 +1442,7 @@ void loop()
     }
     lastRefreshTime = logger.dataTime;
   }
-  else if (logger.dataTime == 0 && lastRefreshTime == 0) {
+  else if (logger.dataTime == lastRefreshTime) {
     #if USE_SERIAL_LOGGING
     Serial.print("\nERROR GETTING CURRENT TIME! USING BACKUP CLOCK!");
     #endif
@@ -1471,10 +1483,11 @@ void loop()
     lcd.setColor(RGB16_WHITE);
     obd.errors = 0;
   } else if (obd.read(PID_RPM, value)) {
-      lcd.setFontSize(FONT_SIZE_XLARGE);
-      lcd.setColor(RGB16_GREEN);
-      lcd.setCursor(0, 0);
-      lcd.print("OBD CONNECTED   ");
+    lcd.setFontSize(FONT_SIZE_XLARGE);
+    lcd.setColor(RGB16_GREEN);
+    lcd.setCursor(0, 0);
+    lcd.print("OBD CONNECTED   ");
+    lcd.setColor(RGB16_WHITE);
   }
 
   #if USE_GPS

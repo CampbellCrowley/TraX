@@ -61,6 +61,7 @@
 #define USE_MPU6050 1
 //#define USE_MPU9150 1
 #define ACC_DATA_RATIO 160
+#define ACC_OFFSET 0
 #define GYRO_DATA_RATIO 256
 #define COMPASS_DATA_RATIO 8
 
@@ -73,7 +74,7 @@
 /**************************************
 * LCD touch
 **************************************/
-#define USE_TOUCH 1
+#define USE_TOUCH 0
 
 /**************************************
 * LCD module (uncomment only one)
