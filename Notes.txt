@@ -1,3 +1,10 @@
+- Arduino cannot write to SD card every 100ms because it crashes
+  + Possibly because small buffer or slow write speed, unsure of which
+- Arduino devides memory into 3 groups
+  + "Storage Space": 253,952 bytes for storing entire "Sketch" (Fully compiled program)
+  + "Dynamic Memory": 8,192 bytes for Global Variables (Defined pre-runtime and cannot be changed but can be used throughout all code) and Local Variables (Defined during runtime and are dynamic)
+
+
 3rd set of notes:
 - GPS data frequency is aprox.: 100ms
 - GPS altitude is often very incorrect (off by 30m) and fluctuates
