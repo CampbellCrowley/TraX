@@ -58,6 +58,9 @@ typedef struct {
 static File sdfile;
 #endif
 
+static bool fileOpen = false;
+static bool SDChecked = false;
+
 static const char* idstr = "FREEMATICS\r";
 
 class CDataLogger {
