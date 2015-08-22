@@ -54,8 +54,15 @@ typedef struct {
   static File sdfile;
 #endif
 
+<<<<<<< HEAD
+static bool fileOpen = false;
+static bool SDChecked = false;
+
+static const char* idstr = "FREEMATICS\r";
+=======
 // static const char* idstr = "FREEMATICS\r";
 static const char* idstr = "__TRAX__ML\r";
+>>>>>>> Campbell
 
 class CDataLogger {
 public:
