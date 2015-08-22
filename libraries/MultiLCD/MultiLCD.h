@@ -30,7 +30,6 @@ typedef enum {
 #define RGB16(r,g,b) (((uint16_t)(r >> 3) << 11) | ((uint16_t)(g >> 2) << 5) | (b >> 2))
 
 #define RGB16_RED 0xF800
-#define RGB16_BLACK 0x0000
 #define RGB16_GREEN 0x7E0
 #define RGB16_BLUE 0x1F
 #define RGB16_YELLOW 0xFFE0
