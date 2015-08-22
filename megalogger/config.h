@@ -13,7 +13,8 @@
 * Data logging options
 **************************************/
 // enable(1)/disable(0) data logging (if SD card is present)
-#define ENABLE_DATA_LOG 1
+#define ENABLE_DATA_LOG 0
+#define ENABLE_DATA_FILE 1 // Campbell's data_log, must disable ENABLE_DATA_LOG to use this
 #define SD_CS_PIN SS
 
 /**************************************
@@ -23,13 +24,13 @@
 #define USE_SERIAL_LOGGING 1
 
 //Campbell's Serial Logging baud rate
-#define SERIAL_BAUD 9600
+#define SERIAL_BAUD 19200
 
 // enable(1)/disable(0) data streaming
-#define ENABLE_DATA_OUT 0
+#define ENABLE_DATA_OUT 1
 
 // uses software(1)/hardware(0) serial for data streaming
-#define USE_SOFTSERIAL 0
+#define USE_SOFTSERIAL 1
 
 // this defines the format of data streaming
 // FORMAT_BIN is required by Freematics OBD iOS App
@@ -47,7 +48,7 @@
 **************************************/
 #define USE_GPS 1
 #define GPSUART Serial2
-#define MAX_GPS_PROCESS_TIME 50 /* ms */
+#define MAX_GPS_PROCESS_TIME 20 /* ms */
 #define GPS_DATA_TIMEOUT 6000 /* ms */
 
 // 38400bps for G6010 5Hz GPS receiver
@@ -60,19 +61,20 @@
 #define USE_MPU6050 1
 //#define USE_MPU9150 1
 #define ACC_DATA_RATIO 160
+#define ACC_OFFSET 0
 #define GYRO_DATA_RATIO 256
 #define COMPASS_DATA_RATIO 8
 
 /**************************************
 * Timeout/interval options
 **************************************/
-#define OBD_MIN_INTERVAL 20 /* ms */
+#define OBD_MIN_INTERVAL 100 /* ms */
 #define ACC_DATA_INTERVAL 200 /* ms */
 
 /**************************************
 * LCD touch
 **************************************/
-#define USE_TOUCH 1
+#define USE_TOUCH 0
 
 /**************************************
 * LCD module (uncomment only one)
