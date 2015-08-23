@@ -384,74 +384,7 @@ void processGPS()
 
   // keep current data time as last GPS time
   lastGPSDataTime = logger.dataTime;
-
-<<<<<<< HEAD
-=======
-  // display UTC date/time
-  lcd.write(' ');
-  lcd.setCursor(214, 18);
-  lcd.setFlags(FLAG_PAD_ZERO);
-  lcd.printLong(date, 6);
-  lcd.write(' ');
-  lcd.printLong(time, 8);
-
-  /* // display latitude
-  lcd.setCursor(214, 19);
-  lcd.print(lat / 100000);
-  lcd.write('.');
-  lcd.printLong(abs(lat) % 100000, 5);
-  // display longitude
-  lcd.setCursor(214, 20);
-  lcd.print(lon / 100000);
-  lcd.write('.');
-  lcd.printLong(abs(lon) % 100000, 5); */
   
-  //display latitude
-  lcd.setCursor(214, 19);
-  lcd.print((int)(lon/100000));
-  lcd.print('.');
-  uint32_t poslon;
-  if(lon<0) {
-    poslon=lon*-1;
-  } else {
-    poslon=lon;
-  }
-  for(uint32_t i = 10000; i > 10; i/=10) {
-    if(poslon%(i*10) < i) {
-      lcd.print('0');
-    } else {
-      break;
-    }
-  }
-  if(poslon%100000 < 10000) {
-    lcd.print(poslon%100000);
-  } else {
-    lcd.print(poslon%100000);
-  }
-  //display longitude
-  lcd.setCursor(214, 20);
-  lcd.print((int)(lat/100000));
-  lcd.print('.');
-  uint32_t poslat;
-  if(lat<0) {
-    poslat=lat*-1;
-  } else {
-    poslat=lat;
-  }
-  for(uint32_t i = 10000; i > 10; i/=10) {
-    if(poslat%(i*10) < i) {
-      lcd.print('0');
-    } else {
-      break;
-    }
-  }
-  if(poslat%100000 < 10000) {
-    lcd.print(poslat%100000);
-  } else {
-    lcd.print(poslat%100000);
-  }
-  
->>>>>>> Campbell
   // log latitude/longitude
   logger.logData(PID_GPS_LATITUDE, lat);
   logger.logData(PID_GPS_LONGITUDE, lon);
@@ -499,23 +432,7 @@ void processAccelerometer()
 
     logger.dataTime = millis();
 
-<<<<<<< HEAD
-  temp = accelgyro.getTemperature();
-
-  ax /= ACC_DATA_RATIO;
-  ay /= ACC_DATA_RATIO;
-  az /= ACC_DATA_RATIO;
-  gx /= GYRO_DATA_RATIO;
-  gy /= GYRO_DATA_RATIO;
-  gz /= GYRO_DATA_RATIO;
-#if USE_MPU9150
-  mx /= COMPASS_DATA_RATIO;
-  my /= COMPASS_DATA_RATIO;
-  mz /= COMPASS_DATA_RATIO;
-#endif
-=======
     temp = accelgyro.getTemperature();
->>>>>>> Campbell
 
     ax /= ACC_DATA_RATIO;
     ay /= ACC_DATA_RATIO;
@@ -528,39 +445,17 @@ void processAccelerometer()
       my /= COMPASS_DATA_RATIO;
       mz /= COMPASS_DATA_RATIO;
     #endif
-    // display MEMS data
-    lcd.setFontSize(FONT_SIZE_SMALL);
-    lcd.setCursor(214, 22);
-    setColorByValue(ax, 50, 100, 200);
-    lcd.print(ax);
-    setColorByValue(ay, 50, 100, 200);
-    lcd.write('/');
-    lcd.print(ay);
-    setColorByValue(az, 50, 100, 200);
-    lcd.write('/');
-    lcd.print(az);
-    lcd.printSpace(8);
 
-    // display gyro data
-    lcd.setCursor(214, 23);
-    lcd.setColor(RGB16_WHITE);
-    lcd.print(gx);
-    lcd.write('/');
-    lcd.print(gy);
-    lcd.write('/');
-    lcd.print(gz);
-    lcd.printSpace(8);
-
+    ax /= ACC_DATA_RATIO;
+    ay /= ACC_DATA_RATIO;
+    az /= ACC_DATA_RATIO;
+    gx /= GYRO_DATA_RATIO;
+    gy /= GYRO_DATA_RATIO;
+    gz /= GYRO_DATA_RATIO;
     #if USE_MPU9150
-      // display compass data
-      lcd.setCursor(214, 24);
-      lcd.setColor(RGB16_WHITE);
-      lcd.print(mx);
-      lcd.write('/');
-      lcd.print(my);
-      lcd.write('/');
-      lcd.print(mz);
-      lcd.printSpace(8);
+      mx /= COMPASS_DATA_RATIO;
+      my /= COMPASS_DATA_RATIO;
+      mz /= COMPASS_DATA_RATIO;
     #endif
 
     // log x/y/z of accelerometer
@@ -619,35 +514,6 @@ void logOBDData(byte pid)
   if (!obd.getResult(pid, value)) {
     return;
   } */
-  if(obd.getResult(pid, value)) {
-
-    logger.dataTime = millis();
-    // display data
-    showPIDData(pid, value);
-
-    // log data to SD card
-    logger.logData(0x100 | pid, value);
-
-    if (pid == PID_SPEED) {
-      // estimate distance travelled since last speed update
-      distance += (uint32_t)(value + lastSpeed) * (logger.dataTime - lastSpeedTime) / 6000;
-      // display speed
-      lcd.setFontSize(FONT_SIZE_MEDIUM);
-      lcd.setCursor(250, 5);
-      lcd.printInt(distance / 1000);
-      lcd.write('.');
-      lcd.printInt(((uint16_t)distance % 1000) / 100);
-      // calculate and display average speed
-      int avgSpeed = (unsigned long)distance * 3600 / (millis() - startTime);
-      lcd.setCursor(250, 8);
-      lcd.printInt(avgSpeed);
-
-      lastSpeed = value;
-      lastSpeedTime = logger.dataTime;
-    
-    }
-  }
-<<<<<<< HEAD
 
   logger.dataTime = millis();
   // display data
@@ -663,22 +529,19 @@ void logOBDData(byte pid)
     lastSpeed = value;
     lastSpeedTime = logger.dataTime;
   }
-#if ENABLE_DATA_LOG
-  // flush SD data every 1KB
-  if ((logger.dataSize >> 10) != lastFileSize) {
-    logger.flushFile();
-    // display logged data sizes
-  lcd.setFontSize(FONT_SIZE_SMALL);
-  lcd.setCursor(0, 30);
-    lcd.setColor(RGB16_WHITE);
-    lcd.print((unsigned int)(logger.dataSize >> 10));
-    lcd.print("KB");
-    lastFileSize = logger.dataSize >> 10;
-  }
-#endif
-
-=======
->>>>>>> Campbell
+  #if ENABLE_DATA_LOG
+    // flush SD data every 1KB
+    if ((logger.dataSize >> 10) != lastFileSize) {
+      logger.flushFile();
+      // display logged data sizes
+      lcd.setFontSize(FONT_SIZE_SMALL);
+      lcd.setCursor(0, 30);
+      lcd.setColor(RGB16_WHITE);
+      lcd.print((unsigned int)(logger.dataSize >> 10));
+      lcd.print("KB");
+      lastFileSize = logger.dataSize >> 10;
+    }
+  #endif
   // if OBD response is very fast, go on processing other data for a while
   #ifdef OBD_MIN_INTERVAL
     /* do {
@@ -736,7 +599,10 @@ bool reconnect()
     lcd.setFontSize(FONT_SIZE_XLARGE);
     lcd.setColor(RGB16_YELLOW);
     lcd.setCursor(0, 0);
-    lcd.print("OBD RESTARTING  ");
+    lcd.print("OBD RESTARTING");
+      lcd.setBackColor(BackgroundColor);
+      lcd.print("  ");
+      lcd.setBackColor(RGB16_BLACK);
     obd.end();
     obd.begin();
     numreconnect = 0;
@@ -773,14 +639,17 @@ bool reconnect()
   lcd.setFontSize(FONT_SIZE_XLARGE);
   lcd.setColor(RGB16_YELLOW);
   lcd.setCursor(0, 0);
-  lcd.print("OBD             ");
+  lcd.print("OBD");
+  lcd.setBackColor(BackgroundColor);
+  lcd.print("             ");
+  lcd.setBackColor(RGB16_BLACK);
   lcd.setColor(RGB16_WHITE);
   return reconnected;
 }
 
 int startLogging()
 {
-  #if ENABLE_DATA_LOG
+  #if ENABLE_DATA_LOG || ENABLE_DATA_FILE
     lcd.setColor(RGB16_WHITE);
     lcd.setFontSize(FONT_SIZE_MEDIUM);
     lcd.setCursor(0,10);
@@ -794,7 +663,8 @@ int startLogging()
           Serial.print("SD: ");
           Serial.println(index);
         #endif
-        fillBackground(RGB16_GREEN);
+        BackgroundColor = RGB16_GREEN;
+        fillBackground(BackgroundColor);
         initScreen();
         
         lcd.setColor(RGB16_WHITE);
@@ -820,7 +690,8 @@ int startLogging()
           Serial.print("SD: ");
           Serial.println(index);
         #endif
-        fillBackground(RGB16_GREEN);
+        BackgroundColor = RGB16_GREEN;
+        fillBackground(BackgroundColor);
         initScreen();
         
         lcd.setColor(RGB16_WHITE);
@@ -846,13 +717,14 @@ int startLogging()
 }
 void stopLogging()
 {
-  #if ENABLE_DATA_LOG
+  #if ENABLE_DATA_LOG || ENABLE_DATA_FILE
     logger.closeFile();
     #if USE_SERIAL_LOGGING
       Serial.print("SD: No File");
     #endif
     fileOpen = false;
-    fillBackground(RGB16_RED);
+        BackgroundColor = RGB16_RED;
+        fillBackground(BackgroundColor);
     initScreen();
     
     lcd.setColor(RGB16_WHITE);
@@ -862,7 +734,7 @@ void stopLogging()
     lcd.setColor(RGB16_WHITE);
     lcd.setFontSize(FONT_SIZE_MEDIUM);
     lcd.setCursor(0,10);
-    lcd.print("No File");
+    lcd.print("Stopped Logging");
   #endif
 }
 
@@ -908,13 +780,13 @@ void showStates()
   #endif
   lcd.setFontSize(FONT_SIZE_MEDIUM);
   lcd.setColor(RGB16_WHITE);
-  lcd.setCursor(0, 8);
+  lcd.setCursor(0, 6);
   lcd.print("MEMS ");
   lcd.setColor((state & STATE_MEMS_READY) ? RGB16_GREEN : RGB16_RED);
   lcd.draw((state & STATE_MEMS_READY) ? tick : cross, 16, 16);
 
   lcd.setColor(RGB16_WHITE);
-  lcd.setCursor(60, 8);
+  lcd.setCursor(60, 6);
   lcd.print(" GPS ");
   unsigned long rates[2] = {38400, 115200};
   byte sizeofRates = sizeof(rates) / sizeof(rates[0]);
@@ -939,7 +811,7 @@ void showStates()
   for (byte i = 0; i <= sizeofRates; i++) {// try to auto detect GPS baud rate based on pre-defined possibilities
     
     lcd.setColor(RGB16_WHITE);
-    lcd.setCursor(60, 8);
+    lcd.setCursor(60, 6);
     lcd.print(" GPS ");
     lcd.setColor(RGB16_YELLOW);
     lcd.print("Loading"); 
@@ -949,12 +821,12 @@ void showStates()
     if (state & STATE_GPS_CONNECTED) {
       //lcd.setColor(RGB16_BLACK);
       lcd.setColor(RGB16_WHITE);
-      lcd.setCursor(60, 8);
+      lcd.setCursor(60, 6);
       lcd.print(" GPS ");
       for(byte j = 0; j < i + 7; j++) {
         lcd.print(" ");
       }
-      lcd.setCursor(100, 8);
+      lcd.setCursor(100, 6);
       lcd.setColor(RGB16_GREEN);
       lcd.draw(tick, 16, 16);
       lcd.print(" ");
@@ -1004,12 +876,12 @@ void showStates()
         
       } else {
         lcd.setColor(RGB16_WHITE);
-        lcd.setCursor(60, 8);
+        lcd.setCursor(60, 6);
         lcd.print(" GPS ");
         for(byte j = 0; j < i + 7; j++) {
           lcd.print(" ");
         }
-        lcd.setCursor(125, 8);
+        lcd.setCursor(125, 6);
         lcd.setColor(RGB16_RED);
         lcd.draw(cross, 16, 16);
         break;
@@ -1087,13 +959,8 @@ void setup()
   lcd.begin();
   lcd.setFontSize(FONT_SIZE_MEDIUM);
   lcd.setColor(0xFFE0);
-<<<<<<< HEAD
-  lcd.println("MEGA LOGGER - OBD-II/GPS/MEMS");
-  lcd.println("Basic GUI");
-=======
   lcd.println("TraX - OBD-II/GPS/MEMS");
-  lcd.println();
->>>>>>> Campbell
+  lcd.println("Basic GUI");
   lcd.setColor(RGB16_WHITE);
   #if USE_SERIAL_LOGGING
     Serial.print("\nLCD Ready");
@@ -1115,7 +982,7 @@ void setup()
 
   #if USE_GPS
     lcd.setColor(RGB16_WHITE);
-    lcd.setCursor(60, 8);
+    lcd.setCursor(60, 6);
     // lcd.print(" GPS ");
     lcd.print("     ");
     lcd.setColor(RGB16_YELLOW);
@@ -1137,105 +1004,6 @@ void setup()
   #if USE_SERIAL_LOGGING
     Serial.print("\nLogger Ready");
   #endif
-
-<<<<<<< HEAD
-=======
-  
-  bool fileOpened = false;
-  unsigned long fix_age;
-  int year;
-  uint16_t index;
-  byte month, day, hour, minute, second, hundredths;
-  // start SD Card logging with GPS date and time
-  #if ENABLE_DATA_LOG || ENABLE_DATA_FILE
-    if(!fileOpened) {
-      lcd.setFontSize(FONT_SIZE_MEDIUM);
-      lcd.setCursor(0,0);
-      lcd.println("\n");
-      if (checkSD()) {
-        long t = millis();
-        do {
-          #if USE_GPS
-            
-            long t = millis();
-            // int c = GPSUART.read();
-            // if(gps.encode(c)) {
-              gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &fix_age);
-              
-              float flat, flon;
-              gps.f_get_position(&flat, &flon, &fix_age);
-              if (fix_age == TinyGPS::GPS_INVALID_AGE)
-              {
-                /* Serial.print("GPS: No fix detected ");
-                Serial.print(fix_age);
-                Serial.print(", "); */
-              }
-              else if (fix_age > 5000)
-                Serial.print("\nGPS: Warning: possible stale data!");
-              else
-                Serial.print("\nGPS: Data is current.");
-              
-            // }
-            if(fix_age != TinyGPS::GPS_INVALID_AGE && fix_age < 10000){
-              #if USE_SERIAL_LOGGING
-                Serial.print("\nGPS: Fix Age, Sat: ");
-                Serial.print(fix_age);
-                Serial.print(", ");
-                Serial.print(gps.satellites());
-              #endif
-              index = logger.openFile(year, month, day, hour, minute, second);
-              fileOpened = true;
-            }
-          #else
-            // index = logger.openFile();
-            index = logger.openFile(year, month, day, hour, minute, second);
-            fileOpened = true;
-          #endif
-          
-          if(fileOpened) {
-            lcd.setCursor(0,0);
-            lcd.println();
-            if (index > 0) {
-              lcd.print("File ID:");
-              lcd.println(index);
-            } else {
-              lcd.print("No File");
-            }
-          }
-        } while(!fileOpened && millis()- t < 5000);
-        if(!fileOpened) {
-          // uint16_t index = logger.openFile();
-          index = logger.openFile(year, month, day, hour, minute, second);
-          fileOpened = true;
-          lcd.setCursor(0,0);
-          lcd.println();
-          if (index > 0) {
-            lcd.print("File ID:");
-            lcd.println(index);
-          } else {
-            lcd.print("No File");
-          }
-        }
-      }
-    }
-    // lcd.setCursor(0,0);
-    // lcd.println("\n\n");
-    // if(checkSD()) {
-    // }
-    #if USE_SERIAL_LOGGING
-    if(fileOpened) {
-        Serial.print("\nSD Ready (");
-        Serial.print(fix_age);
-        Serial.print(")");
-    } else {
-        Serial.print("\nSD FAILED to ready (");
-        Serial.print(fix_age);
-        Serial.print(")");
-    }
-    #endif
-  #endif
-  
->>>>>>> Campbell
 
 /* #if USE_SERIAL_LOGGING
   Serial.print("\nStates: 1st Run");
@@ -1340,6 +1108,10 @@ void setup()
   lcd.setBackColor(BackgroundColor);
   fillBackground(RGB16_RED);
   initScreen();
+  lcd.setColor(RGB16_WHITE);
+  lcd.setFontSize(FONT_SIZE_MEDIUM);
+  lcd.setCursor(0,10);
+  lcd.print("Press Screen to START Logging");
 
   startTime = millis();
   lastSpeedTime = startTime;
@@ -1351,133 +1123,135 @@ void setup()
 void writeSD()
 {
   // Write data to SD Card \\//
-  #if ENABLE_DATA_FILE && ENABLE_DATA_LOG == 0
-    #if USE_SERIAL_LOGGING
-      Serial.print("\nWriting to SD Card");
-    #endif
-    #if USE_GPS
-      int32_t lat, lon;
-      gps.get_position(&lat, &lon, 0);
-      byte numSat = gps.satellites();
-      long alt = gps.altitude()/100.0;
-    #else
-      numSat=-1;
-      alt = -9999;
-    #endif
-    int16_t ax, ay, az;
-    int16_t gx, gy, gz;
-    int16_t mx, my, mz;
-    
-    #if USE_MPU6050 || USE_MPU9150
-      #if USE_MPU9150
-        accelgyro.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+  if(fileOpen) {
+    #if ENABLE_DATA_FILE && ENABLE_DATA_LOG == 0
+      #if USE_SERIAL_LOGGING
+        Serial.print("\nWriting to SD Card");
+      #endif
+      #if USE_GPS
+        int32_t lat, lon;
+        gps.get_position(&lat, &lon, 0);
+        byte numSat = gps.satellites();
+        long alt = gps.altitude()/100.0;
       #else
-        accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+        numSat=-1;
+        alt = -9999;
+      #endif
+      int16_t ax, ay, az;
+      int16_t gx, gy, gz;
+      int16_t mx, my, mz;
+      
+      #if USE_MPU6050 || USE_MPU9150
+        #if USE_MPU9150
+          accelgyro.getMotion9(&ax, &ay, &az, &gx, &gy, &gz, &mx, &my, &mz);
+        #else
+          accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+          mx=-1;
+          my=-1;
+          mz=-1;
+        #endif
+      #else
+        ax=-1;
+        ay=-1;
+        az=-1;
+        gx=-1;
+        gy=-1;
+        gz=-1;
         mx=-1;
         my=-1;
         mz=-1;
       #endif
-    #else
-      ax=-1;
-      ay=-1;
-      az=-1;
-      gx=-1;
-      gy=-1;
-      gz=-1;
-      mx=-1;
-      my=-1;
-      mz=-1;
-    #endif
-    ax /= ACC_DATA_RATIO;
-    ay /= ACC_DATA_RATIO;
-    az /= ACC_DATA_RATIO;
-    gx /= GYRO_DATA_RATIO;
-    gy /= GYRO_DATA_RATIO;
-    gz /= GYRO_DATA_RATIO;
-    #if USE_MPU9150
-      mx /= COMPASS_DATA_RATIO;
-      my /= COMPASS_DATA_RATIO;
-      mz /= COMPASS_DATA_RATIO;
-    #endif
-    int throttle;
-    int speed;
-    int rpm;
-    if(!obd.read(PID_THROTTLE, throttle)){
-      throttle = 0;
-    }
-    if(!obd.read(PID_SPEED, speed)) {
-      speed = 0;
-    }
-    if(!obd.read(PID_RPM, rpm)) {
-      rpm = 0;
-    }
-    
-    #if ACC_OFFSET
-      if(speed == 0) {
-        accXoffset = ax;
-        accYoffset = ay;
-        accZoffset = az;
+      ax /= ACC_DATA_RATIO;
+      ay /= ACC_DATA_RATIO;
+      az /= ACC_DATA_RATIO;
+      gx /= GYRO_DATA_RATIO;
+      gy /= GYRO_DATA_RATIO;
+      gz /= GYRO_DATA_RATIO;
+      #if USE_MPU9150
+        mx /= COMPASS_DATA_RATIO;
+        my /= COMPASS_DATA_RATIO;
+        mz /= COMPASS_DATA_RATIO;
+      #endif
+      int throttle;
+      int speed;
+      int rpm;
+      if(!obd.read(PID_THROTTLE, throttle)){
+        throttle = 0;
       }
-      ax -= accXoffset;
-      ay -= accYoffset;
-      az -= accZoffset;
-    #endif
-    
-    #if USE_SERIAL_LOGGING
-      Serial.print("\nLon: ");
-      Serial.print(lon);
-      Serial.print(", ");
-      Serial.print(lon/100000);
-      Serial.print('.');
-      uint32_t poslon;
-      if(lon<0) {
-        poslon=lon*-1;
-      } else {
-        poslon=lon;
+      if(!obd.read(PID_SPEED, speed)) {
+        speed = 0;
       }
-      for(uint32_t i = 10000; i > 10; i/=10) {
-        if(poslon%(i*10) < i) {
-          Serial.print('0');
-        } else {
-          break;
+      if(!obd.read(PID_RPM, rpm)) {
+        rpm = 0;
+      }
+      
+      #if ACC_OFFSET
+        if(speed == 0) {
+          accXoffset = ax;
+          accYoffset = ay;
+          accZoffset = az;
         }
-      }
-      if(poslon%100000 < 10000) {
-        Serial.print(poslon%100000);
-      } else {
-        Serial.print(poslon%100000);
-      }
-      Serial.print("\nLat: ");
-      Serial.print(lat);
-      Serial.print(", ");
-      Serial.print(lat/100000);
-      Serial.print('.');
-      uint32_t poslat;
-      if(lat<0) {
-        poslat=lat*-1;
-      } else {
-        poslat=lat;
-      }
-      for(uint32_t i = 10000; i > 10; i/=10) {
-        if(poslat%(i*10) < i) {
-          Serial.print('0');
+        ax -= accXoffset;
+        ay -= accYoffset;
+        az -= accZoffset;
+      #endif
+      
+      #if USE_SERIAL_LOGGING
+        Serial.print("\nLon: ");
+        Serial.print(lon);
+        Serial.print(", ");
+        Serial.print(lon/100000);
+        Serial.print('.');
+        uint32_t poslon;
+        if(lon<0) {
+          poslon=lon*-1;
         } else {
-          break;
+          poslon=lon;
         }
-      }
-      if(poslat%100000 < 10000) {
-        Serial.print(poslat%100000);
-      } else {
-        Serial.print(poslat%100000);
-      }
+        for(uint32_t i = 10000; i > 10; i/=10) {
+          if(poslon%(i*10) < i) {
+            Serial.print('0');
+          } else {
+            break;
+          }
+        }
+        if(poslon%100000 < 10000) {
+          Serial.print(poslon%100000);
+        } else {
+          Serial.print(poslon%100000);
+        }
+        Serial.print("\nLat: ");
+        Serial.print(lat);
+        Serial.print(", ");
+        Serial.print(lat/100000);
+        Serial.print('.');
+        uint32_t poslat;
+        if(lat<0) {
+          poslat=lat*-1;
+        } else {
+          poslat=lat;
+        }
+        for(uint32_t i = 10000; i > 10; i/=10) {
+          if(poslat%(i*10) < i) {
+            Serial.print('0');
+          } else {
+            break;
+          }
+        }
+        if(poslat%100000 < 10000) {
+          Serial.print(poslat%100000);
+        } else {
+          Serial.print(poslat%100000);
+        }
+      #endif
+      
+      //            Lap,Timestamp (ms),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (kph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Percentage
+      logger.logAll(-1, millis(), distance/1000, numSat, lat, lon, speed, alt, my, az, ax, rpm, throttle);
+      /* #if USE_SERIAL_LOGGING
+        Serial.print("\nWritten to SD Card: ");
+      #endif */
     #endif
-    
-    //            Lap,Timestamp (ms),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (kph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Percentage
-    logger.logAll(-1, millis(), distance/1000, numSat, lat, lon, speed, alt, my, az, ax, rpm, throttle);
-    /* #if USE_SERIAL_LOGGING
-      Serial.print("\nWritten to SD Card: ");
-    #endif */
-  #endif
+  }
   //\\
   
 }
@@ -1527,7 +1301,6 @@ void loop()
 
   tX = -1;
   tY = -1;
-  getTouch();
   
   inputString = "";
   stringComplete = false;
@@ -1544,7 +1317,7 @@ void loop()
       logger.flushFile();
       // display logged data sizes
       lcd.setFontSize(FONT_SIZE_SMALL);
-      lcd.setCursor(242, 28);
+      lcd.setCursor(0, 29);
       lcd.print((unsigned int)(logger.dataSize >> 10));
       lcd.print("KB");
       lastFileSize = logger.dataSize >> 10;
@@ -1583,7 +1356,6 @@ void loop()
       index2++;
     }
   }
-<<<<<<< HEAD
   if (logger.dataTime == lastTime) {
     #if USE_SERIAL_LOGGING
     Serial.print("\nERROR GETTING CURRENT TIME! USING BACKUP CLOCK!");
@@ -1600,10 +1372,6 @@ void loop()
     lcd.print("         "); */
   }
   if (logger.dataTime -  lastRefreshTime >= 1000) {
-=======
-
-  if (logger.dataTime - lastRefreshTime >= 1000) {
->>>>>>> Campbell
     char buf[12];
     // display elapsed time
     unsigned int sec;
@@ -1624,33 +1392,13 @@ void loop()
       Serial.print(", LastRefreshTime: ");
       Serial.print(lastRefreshTime);
     #endif
-<<<<<<< HEAD
     lastRefreshTime = logger.dataTime;
   }
   lastTime = logger.dataTime;
-=======
-    // display OBD time
-    if (t < 30000) {
-      lcd.setFontSize(FONT_SIZE_SMALL);
-      lcd.setCursor(242, 26);
-      lcd.printInt((uint16_t)t);
-      lcd.print("ms");
-      lcd.printSpace(2);
-    }
-    lastRefreshTime = logger.dataTime;
-  }
-  else if (logger.dataTime == lastRefreshTime) {
-    #if USE_SERIAL_LOGGING
-    Serial.print("\nERROR GETTING CURRENT TIME! USING BACKUP CLOCK!");
-    #endif
-    logger.dataTime = millis();
-  }
->>>>>>> Campbell
 
   int value;
   if (obd.errors >= 5) {
     #if USE_SERIAL_LOGGING
-<<<<<<< HEAD
       char buf[12];
       unsigned int sec;
       if(fileOpen) {
@@ -1658,24 +1406,23 @@ void loop()
       } else {
         sec = (logger.dataTime - startTime) / 1000;
       }
-=======
-      /* char buf[12];
-      unsigned int sec = (logger.dataTime - startTime) / 1000;
->>>>>>> Campbell
       sprintf(buf, "%02u:%02u ", sec / 60, sec % 60);
       Serial.print("\nElapsed: ");
       Serial.print(buf);
       Serial.print(", Time: ");
       Serial.print(logger.dataTime);
       Serial.print(", LastRefreshTime: ");
-      Serial.print(lastRefreshTime); */
+      Serial.print(lastRefreshTime);
       Serial.print("\nReconnecting to OBD ");
     #endif
     if(reconnect()) {
       lcd.setFontSize(FONT_SIZE_XLARGE);
       lcd.setColor(RGB16_GREEN);
       lcd.setCursor(0, 0);
-      lcd.print("OBD CONNECTED   ");
+      lcd.print("OBD CONNECTED");
+      lcd.setBackColor(BackgroundColor);
+      lcd.print("   ");
+      lcd.setBackColor(RGB16_BLACK);
       #if USE_SERIAL_LOGGING
       Serial.print("\nOBD Connected");
       #endif
@@ -1694,7 +1441,10 @@ void loop()
     lcd.setFontSize(FONT_SIZE_XLARGE);
     lcd.setColor(RGB16_GREEN);
     lcd.setCursor(0, 0);
-    lcd.print("OBD CONNECTED   ");
+    lcd.print("OBD CONNECTED");
+      lcd.setBackColor(BackgroundColor);
+      lcd.print("   ");
+      lcd.setBackColor(RGB16_BLACK);
     lcd.setColor(RGB16_WHITE);
   }
 
