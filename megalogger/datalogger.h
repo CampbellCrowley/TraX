@@ -310,7 +310,7 @@ public:
         sdfile.print  (hour);
         sdfile.print  (":");
         sdfile.print  (minute);
-        sdfile.println(",,,,,,,,,,,,,,,,");
+        sdfile.println(",GMT,,,,,,,,,,,,,,,");
         
         sdfile.println("Note,PROTOTYPE,,,,,,,,,,,,,,,,,");
         sdfile.println(",,,,,,,,,,,,,,,,,,");

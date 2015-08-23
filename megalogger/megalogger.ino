@@ -650,64 +650,103 @@ bool reconnect()
 int startLogging()
 {
   #if ENABLE_DATA_LOG || ENABLE_DATA_FILE
+  
     lcd.setColor(RGB16_WHITE);
     lcd.setFontSize(FONT_SIZE_MEDIUM);
     lcd.setCursor(0,10);
     if (!SDChecked && checkSD()) {
       SDChecked = true;
-      uint16_t index = logger.openFile();
+    } else if(!SDChecked) {
+      return -1;
+    }
+    #if USE_SERIAL_LOGGING
+      Serial.print("\nSD: Opening File");
+    #endif
+    
+    bool fileOpened = false;
+    unsigned long fix_age;
+    int year;
+    uint16_t index;
+    byte month, day, hour, minute, second, hundredths;
+    // start SD Card logging with GPS date and time
+    long t = millis();
+    do {
+      #if USE_GPS
+        // int c = GPSUART.read();
+        // if(gps.encode(c)) {
+        gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &fix_age);
+        
+        float flat, flon;
+        gps.f_get_position(&flat, &flon, &fix_age);
+        if (fix_age == TinyGPS::GPS_INVALID_AGE)
+        {
+          /* Serial.print("GPS: No fix detected ");
+          Serial.print(fix_age);
+          Serial.print(", "); */
+        }
+        else if (fix_age > 5000)
+          Serial.print("\nGPS: Warning: possible stale data!");
+        else
+          Serial.print("\nGPS: Data is current.");
+          
+        // }
+        if(fix_age != TinyGPS::GPS_INVALID_AGE && fix_age < 10000){
+          #if USE_SERIAL_LOGGING
+            Serial.print("\nGPS: Fix Age, Sat: ");
+            Serial.print(fix_age);
+            Serial.print(", ");
+            Serial.print(gps.satellites());
+          #endif
+          index = logger.openFile(year, month, day, hour, minute, second);
+          fileOpened = true;
+        }
+      #else
+        // index = logger.openFile();
+        index = logger.openFile(year, month, day, hour, minute, second);
+        fileOpened = true;
+      #endif
+      
+      if(fileOpened) {
+        lcd.setCursor(0,10);
+        if (index > 0) {
+          lcd.print("SD: ");
+          lcd.print(index);
+          BackgroundColor = RGB16_GREEN;
+          fillBackground(BackgroundColor);
+          initScreen();
+          fileOpen = true;
+          return index;
+        } else {
+          lcd.print("No File");
+          return -1;
+        }
+      }
+    } while(!fileOpened && millis()- t < 2000);
+      
+    if(!fileOpened) {
+      // uint16_t index = logger.openFile();
+      index = logger.openFile(year, month, day, hour, minute, second);
+      fileOpened = true;
+      lcd.setCursor(0,10);
       if (index > 0) {
-        fileOpen = true;
-        logStartTime = millis();
-        #if USE_SERIAL_LOGGING
-          Serial.print("SD: ");
-          Serial.println(index);
-        #endif
+        lcd.print("SD: ");
+        lcd.print(index);
         BackgroundColor = RGB16_GREEN;
         fillBackground(BackgroundColor);
         initScreen();
-        
-        lcd.setColor(RGB16_WHITE);
-        lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
-        lcd.print("SD: ");
-        lcd.print(index);
-        return index;
-      } else {
-        lcd.print("No File");
-        #if USE_SERIAL_LOGGING
-          Serial.print("SD: No File");
-        #endif
-        fileOpen = false;
-        return -1;
-      }
-    } else if(SDChecked) {
-      uint16_t index = logger.openFile();
-      if (index > 0) {
         fileOpen = true;
-        logStartTime = millis();
-        #if USE_SERIAL_LOGGING
-          Serial.print("SD: ");
-          Serial.println(index);
-        #endif
-        BackgroundColor = RGB16_GREEN;
-        fillBackground(BackgroundColor);
-        initScreen();
-        
-        lcd.setColor(RGB16_WHITE);
-        lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
-        lcd.print("SD: ");
-        lcd.print(index);
         return index;
       } else {
         lcd.print("No File");
-        #if USE_SERIAL_LOGGING
-          Serial.print("SD: No File");
-        #endif
-        fileOpen = false;
         return -1;
       }
+    } else {
+      lcd.print("No File");
+      #if USE_SERIAL_LOGGING
+        Serial.print("\nSD: No File");
+      #endif
+      fileOpen = false;
+      return -1;
     }
   #else
     lcd.print("File Logging Disabled");
@@ -720,11 +759,11 @@ void stopLogging()
   #if ENABLE_DATA_LOG || ENABLE_DATA_FILE
     logger.closeFile();
     #if USE_SERIAL_LOGGING
-      Serial.print("SD: No File");
+      Serial.print("\nSD: Closing File");
     #endif
     fileOpen = false;
-        BackgroundColor = RGB16_RED;
-        fillBackground(BackgroundColor);
+    BackgroundColor = RGB16_RED;
+    fillBackground(BackgroundColor);
     initScreen();
     
     lcd.setColor(RGB16_WHITE);
@@ -1196,7 +1235,7 @@ void writeSD()
         az -= accZoffset;
       #endif
       
-      #if USE_SERIAL_LOGGING
+      #if USE_SERIAL_LOGGING // 0.00015 Lat/long change for lap counter
         Serial.print("\nLon: ");
         Serial.print(lon);
         Serial.print(", ");
