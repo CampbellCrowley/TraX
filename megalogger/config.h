@@ -8,6 +8,7 @@
 //#define OBD_ADAPTER_MODEL OBD_MODEL_UART
 #define OBD_PROTOCOL PROTO_AUTO
 #define OBD_BREAKOUT 1
+#define OBD_BREAKOUT_TIME 7000
 
 /**************************************
 * Data logging options
@@ -51,6 +52,10 @@
 #define MAX_GPS_PROCESS_TIME 20 /* ms */
 #define GPS_DATA_TIMEOUT 6000 /* ms */
 
+#define GPS_LAP_LAT   39.538476
+#define GPS_LAP_LON -122.331204
+#define GPS_LAP_BUFFER 0.0002
+
 // 38400bps for G6010 5Hz GPS receiver
 // 115200bps for G7020 10Hz GPS receiver
 #define GPS_BAUDRATE 115200 /* bps */
@@ -61,14 +66,14 @@
 #define USE_MPU6050 1
 //#define USE_MPU9150 1
 #define ACC_DATA_RATIO 160
-#define ACC_OFFSET 0
+#define ACC_OFFSET 1
 #define GYRO_DATA_RATIO 256
 #define COMPASS_DATA_RATIO 8
 
 /**************************************
 * Timeout/interval options
 **************************************/
-#define OBD_MIN_INTERVAL 100 /* ms */
+#define OBD_MIN_INTERVAL 200 /* ms */
 #define ACC_DATA_INTERVAL 200 /* ms */
 
 /**************************************

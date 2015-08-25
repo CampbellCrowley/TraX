@@ -276,7 +276,9 @@ public:
             return 0;
         }
         
+        char buf[12];
         #if USE_SERIAL_LOGGING
+          sprintf(buf, "%02u:%02u:%02u ", hour, minute, second);
           Serial.print("\nDATE: ");
           Serial.print(month);
           Serial.print("/");
@@ -284,11 +286,12 @@ public:
           Serial.print("/");
           Serial.print(year);
           Serial.print(" ");
-          Serial.print(hour);
-          Serial.print(":");
-          Serial.print(minute);
-          Serial.print(":");
-          Serial.print(second);
+          Serial.print(buf);
+          // Serial.print(hour);
+          // Serial.print(":");
+          // Serial.print(minute);
+          // Serial.print(":");
+          // Serial.print(second);
         #endif
         
         
@@ -300,6 +303,7 @@ public:
         sdfile.println("Driver name,,,,,,,,,,,,,,,,,,");
         sdfile.println("Export scope,Whole session,,,,,,,,,,,,,,,,,");
         
+        sprintf(buf, "%02u:%02u", hour, minute);
         sdfile.print  ("Created,");
         sdfile.print  (month);
         sdfile.print  ("/");
@@ -307,9 +311,10 @@ public:
         sdfile.print  ("/");
         sdfile.print  (year);
         sdfile.print  (",");
-        sdfile.print  (hour);
-        sdfile.print  (":");
-        sdfile.print  (minute);
+        sdfile.print  (buf);
+        // sdfile.print  (hour);
+        // sdfile.print  (":");
+        // sdfile.print  (minute);
         sdfile.println(",GMT,,,,,,,,,,,,,,,");
         
         sdfile.println("Note,PROTOTYPE,,,,,,,,,,,,,,,,,");
