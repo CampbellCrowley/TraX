@@ -56,6 +56,13 @@ typedef struct {
 
 static bool fileOpen = false;
 static bool SDChecked = false;
+
+  static String TRACK_DRIVER = "KARL_TOWNSEND";
+  // static String TRACK_DRIVER = MATT_CROWLEY;
+  static String TRACK_NAME = "THUNDERHILL";
+  // static String TRACK_NAME = BERRY_AVE;
+  
+  
 // static const char* idstr = "FREEMATICS\r";
 static const char* idstr = "__TRAX__ML\r";
 
@@ -152,7 +159,7 @@ public:
       if(!(lap >= 0)) {// lap number NYI
         data += "0,";
       } else {
-        data += lap + ",";
+        data += lap;data+=",";
       }
       data += ((double)time/1000.0);data+=","; // timestamp (s)
       data += (double)dist*0.621371;data+=","; //  distance driven based on speed and time NOT GPS (miles)
@@ -219,17 +226,23 @@ public:
       } else {
         data += ",";
       }
-      data += accLon;data+=",";// longitudinal acceleration
-      data += accLat;data+=",";// lateral acceleration
-      data += "0";data+=",";//xpos
-      data += "0";data+=",";//ypos
+      if(accLon > 5000 || accLon < -5000) {
+        data += "0,";
+      } else {
+        data += accLon;data+=",";// longitudinal acceleration
+      }
+      if(accLat > 5000 || accLat < -5000) {
+        data += "0,";
+      } else {
+        data += accLat;data+=",";// lateral acceleration
+      }
       data += rpm;data+=",";// rpm not simplified
       data += throttle;data+=",";// throttle percent
       data += "";data+=",";//trap name
       
       data += ",\n";
       
-      //Lap #,Timestamp (s),Distance (m),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),X-position (m),Y-position (m),RPM (rpm),Throttle Position (%),Trap name
+      //Lap #,Timestamp (s),Distance (m),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Position (%),Trap name
       
       char dataChar[data.length()];
       data.toCharArray(dataChar, data.length());
@@ -299,8 +312,15 @@ public:
         sdfile.println(",,,,,,,,,,,,,,,,,,");
         sdfile.println("Session title,TraX Home Testing,,,,,,,,,,,,,,,,,");
         sdfile.println("Session type,Lap timing,,,,,,,,,,,,,,,,,");
-        sdfile.println("Track name,N/A,,,,,,,,,,,,,,,,,");
-        sdfile.println("Driver name,,,,,,,,,,,,,,,,,,");
+        
+        sdfile.print  ("Track name,");
+        sdfile.print(TRACK_NAME);
+        sdfile.println(",,,,,,,,,,,,,,,,,");
+        
+        sdfile.print  ("Driver name,");
+        sdfile.print(TRACK_DRIVER);
+        sdfile.println(",,,,,,,,,,,,,,,,,");
+        
         sdfile.println("Export scope,Whole session,,,,,,,,,,,,,,,,,");
         
         sprintf(buf, "%02u:%02u", hour, minute);
@@ -320,7 +340,7 @@ public:
         sdfile.println("Note,PROTOTYPE,,,,,,,,,,,,,,,,,");
         sdfile.println(",,,,,,,,,,,,,,,,,,");
         // sdfile.print("\nLap #,Timestamp (ms),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Percentage\r");
-        sdfile.println("Lap #,Timestamp (s),Distance (mi),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),X-position (m),Y-position (m),RPM (rpm),Throttle Position (%),Trap name");
+        sdfile.println("Lap #,Timestamp (s),Distance (mi),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Position (%),Trap name");
         return fileIndex;
     }
     void closeFile()
