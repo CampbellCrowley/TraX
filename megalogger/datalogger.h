@@ -36,29 +36,35 @@ typedef struct {
 
 #define FILE_NAME_FORMAT "/DAT%05d.CSV"
 
-#if ENABLE_DATA_OUT
+#if ENABLE_DATA_OUT || ENABLE_DATA_FILE
 
-#if USE_SOFTSERIAL
+  #if USE_SOFTSERIAL
 
-#if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__)
-    SoftwareSerial SerialBLE(A8, A9); /* for BLE Shield on MEGA*/
-#else
-    SoftwareSerial SerialBLE(A2, A3); /* for BLE Shield on UNO/leonardo*/
+    #if defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__)
+        SoftwareSerial SerialBLE(A8, A9); /* for BLE Shield on MEGA*/
+    #else
+        SoftwareSerial SerialBLE(A2, A3); /* for BLE Shield on UNO/leonardo*/
+    #endif
+
+  #else
+
+  #define SerialBLE Serial3
+
+  #endif
+  static File sdfile;
 #endif
 
-#else
+static bool fileOpen = false;
+static bool SDChecked = false;
 
-#define SerialBLE Serial3
-
-#endif
-
-#endif
-
-#if ENABLE_DATA_LOG
-static File sdfile;
-#endif
-
-static const char* idstr = "FREEMATICS\r";
+  static String TRACK_DRIVER = "KARL_TOWNSEND";
+  // static String TRACK_DRIVER = MATT_CROWLEY;
+  static String TRACK_NAME = "THUNDERHILL";
+  // static String TRACK_NAME = BERRY_AVE;
+  
+  
+// static const char* idstr = "FREEMATICS\r";
+static const char* idstr = "__TRAX__ML\r";
 
 class CDataLogger {
 public:
@@ -66,7 +72,7 @@ public:
     {
 #if ENABLE_DATA_OUT
         SerialBLE.begin(STREAM_BAUDRATE);
-        SerialBLE.print(idstr);
+        SerialBLE.println(idstr);
 #endif
 #if ENABLE_DATA_LOG
         m_lastDataTime = 0;
@@ -147,12 +153,121 @@ public:
         dataSize += sdfile.write((uint8_t*)buf, n);
 #endif
     }
-#if ENABLE_DATA_LOG
-    uint16_t openFile(uint16_t logFlags = 0, uint32_t dateTime = 0)
+    void logAll(int lap, unsigned long time, uint32_t dist, byte numSat, float lat, float lon, long speed, double alt, unsigned long bearing, unsigned long accLon, unsigned long accLat, uint32_t rpm, byte throttle)
+    {
+      String data = "";
+      if(!(lap >= 0)) {// lap number NYI
+        data += "0,";
+      } else {
+        data += lap;data+=",";
+      }
+      data += ((double)time/1000.0);data+=","; // timestamp (s)
+      data += (double)dist*0.621371;data+=","; //  distance driven based on speed and time NOT GPS (miles)
+      data += dist;data+=","; //  distance driven based on speed and time NOT GPS (kilometeres)
+      data += numSat;data+=",";// number of connected satellites
+      
+      
+      data += (int)(lat/100000);// latitude
+      data += '.';
+      uint32_t poslat;
+      if(lat<0) {
+        poslat=lat*-1;
+      } else {
+        poslat=lat;
+      }
+      for(uint32_t i = 10000; i > 10; i/=10) {
+        if(poslat%(i*10) < i) {
+          data += '0';
+        } else {
+          break;
+        }
+      }
+      if(poslat%100000 < 10000) {
+        data += poslat%100000;
+      } else {
+        data += poslat%100000;
+      }
+      data+=',';
+      
+      data += (int)(lon/100000);// longitude
+      data += '.';
+      uint32_t poslon;
+      if(lon<0) {
+        poslon=lon*-1;
+      } else {
+        poslon=lon;
+      }
+      for(uint32_t i = 10000; i > 10; i/=10) {
+        if(poslon%(i*10) < i) {
+          data += '0';
+        } else {
+          break;
+        }
+      }
+      if(poslon%100000 < 10000) {
+        data += poslon%100000;
+      } else {
+        data += poslon%100000;
+      }
+      data+=',';
+      
+      data += (double)speed*0.27777777777;data+=",";// speed in meters/second
+      data += speed;data+=",";// speed in kilometres/hour
+      data += (double)speed*0.621371;data+=",";// speed in miles/hour
+      if(alt != -9999) {
+        data += alt;data+=",";// altitude
+      } else {
+        data += ",";
+      }
+      if(bearing >= 360) {
+        data += '0';data+=",";// compass direction/rotation
+      } else if(bearing >= 0) {
+        data += bearing;data+=",";// compass direction/rotation
+      } else {
+        data += ",";
+      }
+      if(accLon > 5000 || accLon < -5000) {
+        data += "0,";
+      } else {
+        data += accLon;data+=",";// longitudinal acceleration
+      }
+      if(accLat > 5000 || accLat < -5000) {
+        data += "0,";
+      } else {
+        data += accLat;data+=",";// lateral acceleration
+      }
+      data += rpm;data+=",";// rpm not simplified
+      data += throttle;data+=",";// throttle percent
+      data += "";data+=",";//trap name
+      
+      data += ",\n";
+      
+      //Lap #,Timestamp (s),Distance (m),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Position (%),Trap name
+      
+      char dataChar[data.length()];
+      data.toCharArray(dataChar, data.length());
+      
+      char buf[data.length()];
+      byte n = sprintf(buf, dataChar);
+      dataSize += sdfile.write((uint8_t*)buf, n);
+      dataSize += sdfile.println();
+      /* #if USE_SERIAL_LOGGING
+        Serial.print("\nWritten to SD Card: \n");
+        Serial.write((uint8_t*)buf, n);
+        Serial.print("\n");
+        Serial.print(data);
+      #endif */
+    }
+#if ENABLE_DATA_LOG || ENABLE_DATA_FILE
+    uint16_t openFile() {
+      return openFile(2000, 00, 00, 00, 00, 00);
+    }
+    uint16_t openFile(uint32_t year, uint32_t month, uint32_t day, uint32_t hour, uint32_t minute, uint32_t second, uint16_t logFlags = 0, uint32_t dateTime = 0)
     {
         uint16_t fileIndex;
-        char filename[24] = "/FRMATICS";
-
+        //char filename[24] = "/FRMATICS";
+        char filename[24] = "/DATA____";
+        
         dataSize = 0;
         if (SD.exists(filename)) {
             for (fileIndex = 1; fileIndex; fileIndex++) {
@@ -173,7 +288,63 @@ public:
         if (!sdfile) {
             return 0;
         }
+        
+        char buf[12];
+        #if USE_SERIAL_LOGGING
+          sprintf(buf, "%02u:%02u:%02u ", hour, minute, second);
+          Serial.print("\nDATE: ");
+          Serial.print(month);
+          Serial.print("/");
+          Serial.print(day);
+          Serial.print("/");
+          Serial.print(year);
+          Serial.print(" ");
+          Serial.print(buf);
+          // Serial.print(hour);
+          // Serial.print(":");
+          // Serial.print(minute);
+          // Serial.print(":");
+          // Serial.print(second);
+        #endif
+        
+        
+        sdfile.println("This file is created using TraX.,,,,,,,,,,,,,,,,,,");
+        sdfile.println(",,,,,,,,,,,,,,,,,,");
+        sdfile.println("Session title,TraX Home Testing,,,,,,,,,,,,,,,,,");
+        sdfile.println("Session type,Lap timing,,,,,,,,,,,,,,,,,");
+        
+        sdfile.print  ("Track name,");
+        sdfile.print(TRACK_NAME);
+        sdfile.println(",,,,,,,,,,,,,,,,,");
+        
+        sdfile.print  ("Driver name,");
+        sdfile.print(TRACK_DRIVER);
+        sdfile.println(",,,,,,,,,,,,,,,,,");
+        
+        sdfile.println("Export scope,Whole session,,,,,,,,,,,,,,,,,");
+        
+        sprintf(buf, "%02u:%02u", hour, minute);
+        sdfile.print  ("Created,");
+        sdfile.print  (month);
+        sdfile.print  ("/");
+        sdfile.print  (day);
+        sdfile.print  ("/");
+        sdfile.print  (year);
+        sdfile.print  (",");
+        sdfile.print  (buf);
+        // sdfile.print  (hour);
+        // sdfile.print  (":");
+        // sdfile.print  (minute);
+        sdfile.println(",GMT,,,,,,,,,,,,,,,");
+        
+        sdfile.println("Note,PROTOTYPE,,,,,,,,,,,,,,,,,");
+        sdfile.println(",,,,,,,,,,,,,,,,,,");
+        // sdfile.print("\nLap #,Timestamp (ms),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Percentage\r");
+        sdfile.println("Lap #,Timestamp (s),Distance (mi),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Position (%),Trap name");
         return fileIndex;
+    }
+    String getStats() {
+      return TRACK_NAME + ", " + TRACK_DRIVER;
     }
     void closeFile()
     {
@@ -186,6 +357,7 @@ public:
 #endif
     uint32_t dataTime;
     uint32_t dataSize;
+
 private:
     byte getChecksum(char* buffer, byte len)
     {
@@ -195,7 +367,7 @@ private:
         }
         return checksum;
     }
-#if ENABLE_DATA_LOG
+#if ENABLE_DATA_LOG || ENABLE_DATA_FILE
     uint32_t m_lastDataTime;
 #endif
 };

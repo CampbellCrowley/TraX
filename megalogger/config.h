@@ -8,12 +8,14 @@
 //#define OBD_ADAPTER_MODEL OBD_MODEL_UART
 #define OBD_PROTOCOL PROTO_AUTO
 #define OBD_BREAKOUT 1
+#define OBD_BREAKOUT_TIME 7000
 
 /**************************************
 * Data logging options
 **************************************/
 // enable(1)/disable(0) data logging (if SD card is present)
-#define ENABLE_DATA_LOG 1
+#define ENABLE_DATA_LOG 0
+#define ENABLE_DATA_FILE 1 // Campbell's data_log, must disable ENABLE_DATA_LOG to use this
 #define SD_CS_PIN SS
 
 /**************************************
@@ -21,15 +23,16 @@
 **************************************/
 // Enable Campbell's Serial Data Stream
 #define USE_SERIAL_LOGGING 1
+#define USE_SERIAL_BLUETOOTH 1
 
 //Campbell's Serial Logging baud rate
-#define SERIAL_BAUD 9600
+#define SERIAL_BAUD 19200
 
 // enable(1)/disable(0) data streaming
-#define ENABLE_DATA_OUT 0
+#define ENABLE_DATA_OUT 1
 
 // uses software(1)/hardware(0) serial for data streaming
-#define USE_SOFTSERIAL 0
+#define USE_SOFTSERIAL 1
 
 // this defines the format of data streaming
 // FORMAT_BIN is required by Freematics OBD iOS App
@@ -40,14 +43,14 @@
    9600bps for BLE
    38400bps for BT 2.1
 */
-#define STREAM_BAUDRATE 9600
+#define STREAM_BAUDRATE 38400
 
 /**************************************
 * GPS configuration
 **************************************/
 #define USE_GPS 1
 #define GPSUART Serial2
-#define MAX_GPS_PROCESS_TIME 50 /* ms */
+#define MAX_GPS_PROCESS_TIME 20 /* ms */
 #define GPS_DATA_TIMEOUT 6000 /* ms */
 
 // 38400bps for G6010 5Hz GPS receiver
@@ -60,13 +63,14 @@
 #define USE_MPU6050 1
 //#define USE_MPU9150 1
 #define ACC_DATA_RATIO 160
+#define ACC_OFFSET 0
 #define GYRO_DATA_RATIO 256
 #define COMPASS_DATA_RATIO 8
 
 /**************************************
 * Timeout/interval options
 **************************************/
-#define OBD_MIN_INTERVAL 20 /* ms */
+#define OBD_MIN_INTERVAL 40 /* ms */
 #define ACC_DATA_INTERVAL 200 /* ms */
 
 /**************************************
