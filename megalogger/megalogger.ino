@@ -4,6 +4,10 @@
 * Copyright (c) 2013-2015 Stanley Huang <stanleyhuangyc@gmail.com>
 * All rights reserved.
 * Visit http://freematics.com for more information
+*************************************************************************
+* 
+* Heavily modified from origional 
+* TraX
 *************************************************************************/
 //
 #include <Arduino.h>
@@ -49,7 +53,8 @@
   // static int32_t GPS_LAP_LAT = 37.361454 * 100000;
   // static int32_t GPS_LAP_LON = -122.092226 * 100000;
 
-  static int32_t GPS_LAP_BUFFER = 0.0002 * 100000;
+  static int32_t GPS_LAP_BUFFER = 0.0004 * 100000;
+  // static int32_t GPS_LAP_BUFFER = 0.0002 * 100000;
 
 
   // GPS logging can only be enabled when there is additional hardware serial UART
@@ -64,6 +69,7 @@ static uint32_t lastMemsDataTime = 0;
 
 static uint8_t lastFileSize = 0;
 static uint32_t lastGPSDataTime = 0;
+static bool lastGPSfail = false;
 static uint32_t lastRefreshTime = 0;
 static uint32_t lastTime = 0;
 static uint32_t distance = 0;
@@ -77,6 +83,7 @@ static int lastThrottle = 0;
 static int lastRPM = 0;
 static uint32_t approxWriteSpeed = 0;
 static int gpsSpeed = -1;
+static bool gpssimfail = false;
 static uint16_t gpsDate = 0;
 String inputString = "";
 boolean stringComplete = false;
@@ -85,6 +92,7 @@ static bool pressed = false;
 static bool lastpressed = false;
 static unsigned int numreconnect = 0;
 static uint8_t obdfail = 0;
+static bool obdconnected = false;
 static int16_t accXoffset = 0;
 static int16_t accYoffset = 0;
 static int16_t accZoffset = 0;
@@ -524,6 +532,7 @@ void logOBDData(byte pid)
     if (!obd.getResult(pid, value)) {
       return;
     }
+    obdfail = 0;
     // estimate distance travelled since last speed update
     distance += (uint32_t)(value + lastSpeed) * (logger.dataTime - lastSpeedTime) / 6000;
 
@@ -657,8 +666,8 @@ void toggleFileTouch()
       if(fileOpen) {
         lcd.setColor(RGB16_WHITE);
         lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
-        lcd.print("SD ERROR");
+        // lcd.setCursor(0,8);
+        lcd.print(" SD ERROR");
         #if USE_SERIAL_LOGGING
           Serial.print("SD ERROR ");
         #endif
@@ -668,8 +677,8 @@ void toggleFileTouch()
       if(!fileOpen) {
         lcd.setColor(RGB16_WHITE);
         lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
-        lcd.print("SD ERROR");
+        // lcd.setCursor(0,8);
+        lcd.print(" SD ERROR");
         #if USE_SERIAL_LOGGING
           Serial.print("SD ERROR ");
           Serial.print(index);
@@ -677,7 +686,7 @@ void toggleFileTouch()
       } else {
         lcd.setColor(RGB16_WHITE);
         lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
+        lcd.setCursor(0,8);
         lcd.print("SD: ");
         lcd.print(index);
         #if USE_SERIAL_LOGGING
@@ -695,7 +704,7 @@ int startLogging()
     
     lcd.setColor(RGB16_WHITE);
     lcd.setFontSize(FONT_SIZE_MEDIUM);
-    lcd.setCursor(0,10);
+    lcd.setCursor(0,6);
     if (!SDChecked && checkSD()) {
       SDChecked = true;
     } else if(!SDChecked) {
@@ -749,7 +758,7 @@ int startLogging()
       #endif
       
       if(fileOpened) {
-        lcd.setCursor(0,10);
+        lcd.setCursor(0,8);
         if (index > 0) {
           lcd.print("SD: ");
           lcd.print(index);
@@ -769,7 +778,7 @@ int startLogging()
       // uint16_t index = logger.openFile();
       index = logger.openFile(year, month, day, hour, minute, second);
       fileOpened = true;
-      lcd.setCursor(0,10);
+      lcd.setCursor(0,8);
       if (index > 0) {
         lcd.print("SD: ");
         lcd.print(index);
@@ -815,11 +824,7 @@ void stopLogging()
     
     lcd.setColor(RGB16_WHITE);
     lcd.setFontSize(FONT_SIZE_MEDIUM);
-    lcd.setCursor(0,10);
-    
-    lcd.setColor(RGB16_WHITE);
-    lcd.setFontSize(FONT_SIZE_MEDIUM);
-    lcd.setCursor(0,10);
+    lcd.setCursor(0,8);
     lcd.print("Stopped Logging");
   #endif
   lap = 0;
@@ -1048,6 +1053,11 @@ void setup()
   lcd.setColor(0xFFE0);
   lcd.println("TraX - OBD-II/GPS/MEMS");
   lcd.println("Basic GUI");
+  
+  lcd.setFontSize(FONT_SIZE_SMALL);
+  lcd.println(logger.getStats());// current track stats (Track name, Driver name)
+  lcd.setFontSize(FONT_SIZE_MEDIUM);
+  
   lcd.setColor(RGB16_WHITE);
   #if USE_SERIAL_LOGGING
     Serial.print("\nLCD Ready");
@@ -1124,11 +1134,7 @@ void setup()
       Serial.print("), Lap Buf (");
       Serial.print(GPS_LAP_BUFFER);
       Serial.print("), Track Stats (");
-      #ifdef TRACK_NAME && TRACK_DRIVER
-        Serial.print(TRACK_NAME);
-        Serial.print(", ");
-        Serial.print(TRACK_DRIVER);
-      #endif
+      Serial.print(logger.getStats());
       Serial.print(")");
       /* lcd.setFontSize(FONT_SIZE_SMALL);
       lcd.print("\nGPS: Lap Lon (");
@@ -1168,6 +1174,7 @@ void setup()
       lcd.setColor(RGB16_RED);
       lcd.setCursor(0, 25);
       lcd.println("\nFailed to connect to OBD!          ");
+      obdconnected=false;
       lcd.setColor(RGB16_CYAN);
       #if USE_SERIAL_LOGGING
         Serial.print("\nFailed to initialize OBD!\n");
@@ -1183,6 +1190,7 @@ void setup()
   } while (!obd.init(OBD_PROTOCOL) && !obd.read(PID_RPM,value) /*&& !(value > 0)*/);
   if (millis() - t <= OBD_BREAKOUT_TIME || !OBD_BREAKOUT) {// if the init completed successfully before the breakout
     lcd.println("\nConnected to OBD!\n");
+    obdconnected=true;
     #if USE_SERIAL_LOGGING
       Serial.print("\nOBD: Ready! ");
       //Serial.print(value);
@@ -1220,7 +1228,7 @@ void setup()
   initScreen();
   lcd.setColor(RGB16_WHITE);
   lcd.setFontSize(FONT_SIZE_MEDIUM);
-  lcd.setCursor(0,10);
+  lcd.setCursor(0,8);
   lcd.print("Press Screen to START Logging");
 
   startTime = millis();
@@ -1229,6 +1237,7 @@ void setup()
   logStartTime = startTime;
   lastTime = startTime;
   lastobdconnect = startTime;
+  
   // lastRefreshTime = logger.dataTime;
 }
 
@@ -1239,8 +1248,9 @@ void writeSD()
   // Write data to SD Card \\//
   if(fileOpen) {
     //approximate write speeds
-    approxWriteSpeed += millis() - lastWriteTime;
-    approxWriteSpeed /= 2;
+    approxWriteSpeed = (approxWriteSpeed*2 + (millis() - lastWriteTime)) / 3;
+    /* approxWriteSpeed += millis() - lastWriteTime;
+    approxWriteSpeed /= 2; */
     lastWriteTime = millis();
     
     #if ENABLE_DATA_FILE && ENABLE_DATA_LOG == 0
@@ -1294,32 +1304,41 @@ void writeSD()
       int throttle;
       int speed;
       int rpm;
-      if(!obd.read(PID_THROTTLE, throttle)){
-        #if USE_SERIAL_LOGGING
-          Serial.print("\nError getting throttle %");
-          Serial.print(throttle);
-        #endif
-        throttle = lastThrottle;
+      if(obdconnected) {
+        if(!obd.read(PID_THROTTLE, throttle)){
+          #if USE_SERIAL_LOGGING
+            Serial.print("\nError getting throttle %");
+            Serial.print(throttle);
+          #endif
+          throttle = lastThrottle;
+        } else {
+          obdfail = 0;
+          lastThrottle = throttle;
+        }
+        if(!obd.read(PID_SPEED, speed)) {
+          #if USE_SERIAL_LOGGING
+            Serial.print("\nError getting speed ");
+            Serial.print(speed);
+          #endif
+          speed = -1;
+        } else {
+          obdfail = 0;
+          //last speed already defined
+        }
+        if(!obd.read(PID_RPM, rpm)) {
+          #if USE_SERIAL_LOGGING
+            Serial.print("\nError getting rpm");
+            Serial.print(rpm);
+          #endif
+          rpm = lastRPM;
+        } else {
+          obdfail = 0;
+          lastRPM = rpm;
+        }
       } else {
-        lastThrottle = throttle;
-      }
-      if(!obd.read(PID_SPEED, speed)) {
         #if USE_SERIAL_LOGGING
-          Serial.print("\nError getting speed ");
-          Serial.print(speed);
+          Serial.print("\nSkipped read of OBD Data because obd is disconnected");
         #endif
-        speed = -1;
-      } else {
-        //last speed already defined
-      }
-      if(!obd.read(PID_RPM, rpm)) {
-        #if USE_SERIAL_LOGGING
-          Serial.print("\nError getting rpm");
-          Serial.print(rpm);
-        #endif
-        rpm = lastRPM;
-      } else {
-        lastRPM = rpm;
       }
       
       #if ACC_OFFSET
@@ -1335,13 +1354,22 @@ void writeSD()
         ay -= accYoffset;
         az -= accZoffset;
         #if USE_SERIAL_LOGGING
-          Serial.print("\nACC (xyz): ");
-          Serial.print(lastAX + " --> " + ax);
-          Serial.print(", ");
-          Serial.print(lastAY + " --> " + ay);
-          Serial.print(", ");
-          Serial.print(lastAZ + " --> " + az);
-          Serial.print(", ");
+          Serial.print("\nACC (xyz): (");
+          
+          Serial.print(lastAX);
+          Serial.print(" --> ");
+          Serial.print(ax);
+          Serial.print("), (");
+          
+          Serial.print(lastAY);
+          Serial.print(" --> ");
+          Serial.print(ay);
+          Serial.print("), (");
+          
+          Serial.print(lastAZ);
+          Serial.print(" --> ");
+          Serial.print(az);
+          Serial.print(")");
         #endif
       #endif
       
@@ -1417,6 +1445,9 @@ void loop()
     stringComplete = false;
   } */
   #if USE_SERIAL_LOGGING
+    // Serial Monitor Heartbeat
+    Serial.print(".");
+    
     while (Serial.available() > 0 || Serial3.available() > 0) {
       // get the new byte:
       char inChar;
@@ -1442,30 +1473,32 @@ void loop()
       Halt();
     } else if(inputString == "close"){
       Serial.println("\n\nCLOSING SD FILE");
-      // logger.closeFile();
+      // close file
       stopLogging();
+      // check to make sure the file is closed
       if(fileOpen) {
         lcd.setColor(RGB16_WHITE);
         lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
-        lcd.print("SD ERROR");
+        // lcd.setCursor(0,8);
+        lcd.print(" SD ERROR");
       }
     } else if(inputString == "open"){
       Serial.println("\n\OPENING SD FILE");
-      // logger.openFile();
+      // open file
       uint16_t index = startLogging();
+      // check to make sure file was opened
       if(!fileOpen) {
         lcd.setColor(RGB16_WHITE);
         lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
-        lcd.print("SD ERROR");
-        lcd.setBackColor(BackgroundColor);
-        lcd.print("        ");
-        lcd.setBackColor(RGB16_BLACK);
+        // lcd.setCursor(0,8);
+        lcd.print(" SD ERROR");
+        // lcd.setBackColor(BackgroundColor);
+        // lcd.print("        ");
+        // lcd.setBackColor(RGB16_BLACK);
       } else {
         lcd.setColor(RGB16_WHITE);
         lcd.setFontSize(FONT_SIZE_MEDIUM);
-        lcd.setCursor(0,10);
+        lcd.setCursor(0,8);
         lcd.print("SD: ");
         lcd.print(index);
         logStartTime = millis();
@@ -1476,22 +1509,28 @@ void loop()
       int year;
       uint16_t index;
       byte month, day, hour, minute, second, hundredths;
+      // get date from GPS, only works if gps has fix
       gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &fix_age);
       
       char buf[12];
-      sprintf(buf, "%02u:%02u:%02u ", hour, minute, second);
+      // format time and date
+      sprintf(buf, "%02u/%02u/%u %02u:%02u:%02u ", month, day, year, hour, minute, second);
       Serial.print("\nDATE: ");
-      Serial.print(month);
-      Serial.print("/");
-      Serial.print(day);
-      Serial.print("/");
-      Serial.print(year);
-      Serial.print(" ");
+      // Serial.print(month);
+      // Serial.print("/");
+      // Serial.print(day);
+      // Serial.print("/");
+      // Serial.print(year);
+      // Serial.print(" ");
       Serial.print(buf);
-    } else if(inputString == "checksd") {
+    } else if(inputString == "sdcheck") {
       Serial.print("\nSDCHECK: ");
       Serial.print(checkSD());
+    } else if(inputString == "gpsfail") {
+      Serial.print("\nSimulating GPS Disconnect for one loop");
+      gpssimfail = true;
     } else if(inputString.length() > 0) {
+      // if command was not recognized, return it back to user
       Serial.print("\nInput: ");
       Serial.print(inputString);
     }
@@ -1582,13 +1621,16 @@ void loop()
     } else {
       sec = (logger.dataTime - startTime) / 1000;
     }
-    sprintf(buf, "%02u:%02u ", sec / 60, sec % 60);
+    sprintf(buf, "%02u:%02u", sec / 60, sec % 60);
     lcd.setFontSize(FONT_SIZE_XLARGE);
     lcd.setCursor(0, 4);
     lcd.print(buf);
+    lcd.setBackColor(BackgroundColor);
+    lcd.print(' ');
+    lcd.setBackColor(RGB16_BLACK);
     if(fileOpen) {
-      lcd.setCursor(0, 4);
-      lcd.print("\nLap #: ");
+      lcd.setCursor(0, 6);
+      lcd.print("Lap #: ");
       lcd.print(lap);
     }
     #if USE_SERIAL_LOGGING
@@ -1611,8 +1653,9 @@ void loop()
 
   int value;
   // attempt to reconnect to OBD if it's disconnected and the last reconnect attempt was at least 5 seconds ago
-  if (obdfail>10 && millis() - lastobdconnect > 5000) {
+  if (obdfail>5 && millis() - lastobdconnect > 5000) {
     obdfail=0;
+    obdconnected = false;
     #if USE_SERIAL_LOGGING
       char buf[12];
       unsigned int sec;
@@ -1621,7 +1664,7 @@ void loop()
       } else {
         sec = (logger.dataTime - startTime) / 1000;
       }
-      sprintf(buf, "%02u:%02u ", sec / 60, sec % 60);
+      sprintf(buf, "%02u:%02u", sec / 60, sec % 60);
       Serial.print("\nElapsed: ");
       Serial.print(buf);
       Serial.print(", Time: ");
@@ -1631,6 +1674,7 @@ void loop()
       Serial.print("\nReconnecting to OBD ------------------------------------");
     #endif
     if(reconnect()) {
+      obdconnected=true;
       lcd.setFontSize(FONT_SIZE_XLARGE);
       lcd.setColor(RGB16_GREEN);
       lcd.setBackColor(RGB16_BLACK);
@@ -1640,9 +1684,10 @@ void loop()
       lcd.print("   ");
       lcd.setBackColor(RGB16_BLACK);
       #if USE_SERIAL_LOGGING
-      Serial.print("\nOBD Connected");
+        Serial.print("\nOBD Connected");
       #endif
     } else {
+      obdconnected=false;
       lcd.setFontSize(FONT_SIZE_XLARGE);
       lcd.setColor(RGB16_YELLOW);
       lcd.setBackColor(RGB16_BLACK);
@@ -1653,9 +1698,10 @@ void loop()
       #endif
     }
     lcd.setColor(RGB16_WHITE);
-    obd.errors = 0;
     lastobdconnect = millis();
-  } else if (obd.read(PID_RPM, value)) {
+  } else if (obd.read(PID_RPM, value) || obd.read(PID_SPEED)) {
+    obdconnected=true;
+    obdfail = 0;
     lcd.setFontSize(FONT_SIZE_XLARGE);
     lcd.setColor(RGB16_GREEN);
     lcd.setBackColor(RGB16_BLACK);
@@ -1665,14 +1711,18 @@ void loop()
     lcd.print("   ");
     lcd.setBackColor(RGB16_BLACK);
     lcd.setColor(RGB16_WHITE);
-  } else {
+  } /* else if (obdfail > 5) {
+    obdconnected=false;
     lcd.setFontSize(FONT_SIZE_XLARGE);
     lcd.setColor(RGB16_YELLOW);
     lcd.setBackColor(RGB16_BLACK);
     lcd.setCursor(0, 0);
-    lcd.print("OBD DISCONNECTED");
+    lcd.print("OBD DISCONNECTED ");
+    lcd.print(obdfail);
     lcd.setBackColor(RGB16_BLACK);
     lcd.setColor(RGB16_WHITE);
+    obdfail++;
+  }  */else {
     obdfail++;
   }
 
@@ -1689,14 +1739,24 @@ void loop()
     }
     else {}
       // Serial.print("\nGPS: Data is current.");
-    if (millis() - lastGPSDataTime > GPS_DATA_TIMEOUT || gps.satellites() < 3) {
+    if (millis() - lastGPSDataTime > GPS_DATA_TIMEOUT || gps.satellites() < 3 || gpssimfail) {
       // GPS not ready
       state &= ~STATE_GPS_READY;
+      if(!lastGPSfail) {
+        lcd.setColor(RGB16_WHITE);
+        lcd.setFontSize(FONT_SIZE_MEDIUM);
+        lcd.setCursor(0,10);
+        lcd.print("NO GPS");
+      }
+      lastGPSfail = true;
       #if USE_SERIAL_LOGGING
         Serial.print("\nGPS Not Ready");
         if(fix_age == TinyGPS::GPS_INVALID_AGE)
         {
           Serial.print(" (No Fix)");
+        } else if(gpssimfail) {
+          Serial.print(" (GPS SIM FAIL)");
+          gpssimfail=false;
         } else {
           #if OBD_BREAKOUT
             if(gps.satellites() >= 3) {
@@ -1714,6 +1774,14 @@ void loop()
     } else {
       // GPS ready
       state |= STATE_GPS_READY;
+      if(lastGPSfail) {
+        lcd.setFontSize(FONT_SIZE_MEDIUM);
+        lcd.setCursor(0,10);
+        lcd.setBackColor(BackgroundColor);
+        lcd.print("      ");
+        lcd.setBackColor(RGB16_BLACK);
+      }
+      lastGPSfail = false;
       /* #if USE_SERIAL_LOGGING
         Serial.print("\nGPS Ready!");
       #endif */

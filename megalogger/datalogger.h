@@ -343,6 +343,9 @@ public:
         sdfile.println("Lap #,Timestamp (s),Distance (mi),Distance (km),Locked satellites,Latitude (deg),Longitude (deg),Speed (m/s),Speed (kph),Speed (mph),Altitude (m),Bearing (deg),Longitudinal Acceleration (G),Lateral Acceleration (G),RPM (rpm),Throttle Position (%),Trap name");
         return fileIndex;
     }
+    String getStats() {
+      return TRACK_NAME + ", " + TRACK_DRIVER;
+    }
     void closeFile()
     {
         sdfile.close();
@@ -354,6 +357,7 @@ public:
 #endif
     uint32_t dataTime;
     uint32_t dataSize;
+
 private:
     byte getChecksum(char* buffer, byte len)
     {
